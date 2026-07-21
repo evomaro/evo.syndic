@@ -43,3 +43,4 @@ php artisan migrate:status
 See [Phase 01 architecture](docs/phase-01.md) for the schema, permission matrix, imports, isolation guarantees, queues, deployment, deviations, and Phase 02 integration notes.
 # evo.syndic
 # evo.syndic
+# evo.syndic
