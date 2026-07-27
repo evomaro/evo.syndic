@@ -263,8 +263,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('maintenance_request_id')->constrained()->restrictOnDelete();
             $table->string('threshold', 20);
-            $table->timestamp('deadline_at');
-            $table->timestamp('exceeded_at');
+            $table->dateTime('deadline_at');
+            $table->dateTime('exceeded_at');
             $table->string('deadline_cycle', 64);
             $table->timestamps();
             $table->unique(['maintenance_request_id', 'threshold', 'deadline_cycle'], 'maint_sla_event_uq');
