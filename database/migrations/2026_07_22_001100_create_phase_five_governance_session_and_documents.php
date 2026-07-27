@@ -19,9 +19,9 @@ return new class extends Migration
             $table->string('audience', 24)->default('owners');
             $table->string('status', 20)->default('draft');
             $table->foreignId('published_version_id')->nullable();
-            $table->timestamp('published_at')->nullable();
+            $table->dateTime('published_at')->nullable();
             $table->foreignId('published_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('archived_at')->nullable();
+            $table->dateTime('archived_at')->nullable();
             $table->foreignId('archived_by')->nullable()->constrained('users')->restrictOnDelete();
             $table->text('archive_reason')->nullable();
             $table->timestamps();
@@ -40,7 +40,7 @@ return new class extends Migration
             $table->string('checksum', 64);
             $table->foreignId('uploaded_by')->constrained('users')->restrictOnDelete();
             $table->foreignId('replaces_version_id')->nullable()->constrained('governance_document_versions')->restrictOnDelete();
-            $table->timestamp('frozen_at')->nullable();
+            $table->dateTime('frozen_at')->nullable();
             $table->timestamps();
             $table->unique(['governance_document_id', 'version'], 'gov_document_version_uq');
         });
@@ -56,7 +56,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->restrictOnDelete();
             $table->string('action', 20)->default('downloaded');
             $table->string('ip_hash', 64)->nullable();
-            $table->timestamp('accessed_at');
+            $table->dateTime('accessed_at');
             $table->timestamps();
             $table->index(['governance_document_version_id', 'accessed_at'], 'gov_document_access_time_idx');
         });
@@ -67,9 +67,9 @@ return new class extends Migration
             $table->foreignId('residence_id')->constrained()->restrictOnDelete();
             $table->foreignId('assembly_id')->constrained()->restrictOnDelete();
             $table->unsignedInteger('version')->default(1);
-            $table->timestamp('issued_at');
+            $table->dateTime('issued_at');
             $table->foreignId('issued_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('legal_deadline_at');
+            $table->dateTime('legal_deadline_at');
             $table->boolean('late_exception')->default(false);
             $table->text('late_exception_reason')->nullable();
             $table->string('disk', 24)->default('local');
@@ -88,7 +88,7 @@ return new class extends Migration
             $table->text('address_snapshot')->nullable();
             $table->string('delivery_method', 40)->default('pending_legal_delivery');
             $table->string('status', 24)->default('pending');
-            $table->timestamp('notified_at')->nullable();
+            $table->dateTime('notified_at')->nullable();
             $table->text('failure_reason')->nullable();
             $table->unsignedInteger('attempt_count')->default(0);
             $table->timestamps();
@@ -101,7 +101,7 @@ return new class extends Migration
             $table->foreignId('convocation_recipient_id')->constrained()->restrictOnDelete();
             $table->string('method', 40);
             $table->string('status', 24);
-            $table->timestamp('attempted_at');
+            $table->dateTime('attempted_at');
             $table->foreignId('actor_id')->constrained('users')->restrictOnDelete();
             $table->string('proof_disk', 24)->nullable();
             $table->string('proof_path')->nullable();
@@ -117,8 +117,8 @@ return new class extends Migration
             $table->foreignId('assembly_id')->constrained()->restrictOnDelete();
             $table->foreignId('electorate_id')->constrained('assembly_electorates')->restrictOnDelete();
             $table->string('status', 24)->default('absent');
-            $table->timestamp('arrived_at')->nullable();
-            $table->timestamp('departed_at')->nullable();
+            $table->dateTime('arrived_at')->nullable();
+            $table->dateTime('departed_at')->nullable();
             $table->unsignedBigInteger('active_weight_numerator')->default(0);
             $table->unsignedBigInteger('active_weight_denominator')->default(10000);
             $table->string('identity_verification_method')->nullable();
@@ -138,7 +138,7 @@ return new class extends Migration
             $table->unsignedBigInteger('weight_denominator')->default(10000);
             $table->foreignId('actor_id')->constrained('users')->restrictOnDelete();
             $table->text('reason')->nullable();
-            $table->timestamp('effective_at');
+            $table->dateTime('effective_at');
             $table->timestamps();
             $table->index(['attendance_record_id', 'effective_at'], 'attendance_event_time_idx');
         });
@@ -155,10 +155,10 @@ return new class extends Migration
             $table->string('document_disk', 24)->default('local');
             $table->string('document_path');
             $table->string('document_checksum', 64);
-            $table->timestamp('submitted_at');
-            $table->timestamp('verified_at')->nullable();
+            $table->dateTime('submitted_at');
+            $table->dateTime('verified_at')->nullable();
             $table->foreignId('verified_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('revoked_at')->nullable();
+            $table->dateTime('revoked_at')->nullable();
             $table->foreignId('revoked_by')->nullable()->constrained('users')->restrictOnDelete();
             $table->text('rejection_reason')->nullable();
             $table->text('revocation_reason')->nullable();
@@ -175,7 +175,7 @@ return new class extends Migration
             $table->string('to_status', 24);
             $table->foreignId('actor_id')->constrained('users')->restrictOnDelete();
             $table->text('reason')->nullable();
-            $table->timestamp('transitioned_at');
+            $table->dateTime('transitioned_at');
             $table->timestamps();
         });
 
@@ -195,7 +195,7 @@ return new class extends Migration
             $table->json('input_snapshot');
             $table->string('checksum', 64);
             $table->foreignId('calculated_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('calculated_at');
+            $table->dateTime('calculated_at');
             $table->timestamps();
             $table->unique(['assembly_id', 'sequence'], 'quorum_assembly_sequence_uq');
         });
@@ -216,9 +216,9 @@ return new class extends Migration
             $table->json('rule_snapshot');
             $table->string('choice', 24);
             $table->foreignId('entered_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('entered_at');
+            $table->dateTime('entered_at');
             $table->string('signed_evidence_path')->nullable();
-            $table->timestamp('finalized_at')->nullable();
+            $table->dateTime('finalized_at')->nullable();
             $table->timestamps();
             $table->unique(['resolution_id', 'electorate_id'], 'ballot_resolution_entitlement_uq');
             $table->index(['assembly_id', 'resolution_id', 'choice'], 'ballot_resolution_choice_idx');
@@ -231,7 +231,7 @@ return new class extends Migration
             $table->string('to_choice', 24);
             $table->text('reason');
             $table->foreignId('actor_id')->constrained('users')->restrictOnDelete();
-            $table->timestamp('corrected_at');
+            $table->dateTime('corrected_at');
             $table->timestamps();
         });
 
@@ -259,7 +259,7 @@ return new class extends Migration
             $table->json('ballot_snapshot');
             $table->string('checksum', 64);
             $table->foreignId('finalized_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('finalized_at');
+            $table->dateTime('finalized_at');
             $table->foreignId('supersedes_result_id')->nullable()->constrained('resolution_results')->restrictOnDelete();
             $table->text('reopen_reason')->nullable();
             $table->timestamps();

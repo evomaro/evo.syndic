@@ -28,9 +28,9 @@ return new class extends Migration
             $table->date('effective_from');
             $table->foreignId('prepared_by')->constrained('users')->restrictOnDelete();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('reviewed_at')->nullable();
+            $table->dateTime('reviewed_at')->nullable();
             $table->foreignId('approved_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('approved_at')->nullable();
+            $table->dateTime('approved_at')->nullable();
             $table->foreignId('superseded_by_id')->nullable();
             $table->timestamps();
             $table->unique(['accounting_book_id', 'version'], 'acct_close_cfg_book_ver_uq');
@@ -52,7 +52,7 @@ return new class extends Migration
             $table->string('review_status', 40)->default('pending_professional_review');
             $table->text('review_notes')->nullable();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('reviewed_at')->nullable();
+            $table->dateTime('reviewed_at')->nullable();
             $table->timestamps();
             $table->unique(
                 ['accounting_closing_configuration_id', 'ledger_account_id'],
@@ -81,14 +81,14 @@ return new class extends Migration
             $table->json('trial_balance_totals');
             $table->char('integrity_fingerprint', 64);
             $table->foreignId('prepared_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('prepared_at');
+            $table->dateTime('prepared_at');
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('reviewed_at')->nullable();
+            $table->dateTime('reviewed_at')->nullable();
             $table->foreignId('approved_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('approved_at')->nullable();
+            $table->dateTime('approved_at')->nullable();
             $table->foreignId('executed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('executed_at')->nullable();
-            $table->timestamp('stale_at')->nullable();
+            $table->dateTime('executed_at')->nullable();
+            $table->dateTime('stale_at')->nullable();
             $table->string('stale_reason_code', 80)->nullable();
             $table->foreignId('closing_entry_id')->nullable()
                 ->constrained('journal_entries', indexName: 'acct_close_pkg_entry_fk')->restrictOnDelete();
@@ -114,7 +114,7 @@ return new class extends Migration
             $table->char('snapshot_fingerprint', 64);
             $table->json('readiness_results');
             $table->foreignId('closed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('closed_at')->nullable();
+            $table->dateTime('closed_at')->nullable();
             $table->timestamps();
             $table->unique(
                 ['accounting_closing_package_id', 'accounting_period_id'],
@@ -132,7 +132,7 @@ return new class extends Migration
             $table->foreignId('actor_id')->nullable()->constrained('users')->nullOnDelete();
             $table->text('reason')->nullable();
             $table->json('evidence')->nullable();
-            $table->timestamp('occurred_at');
+            $table->dateTime('occurred_at');
             $table->timestamps();
             $table->index(
                 ['accounting_closing_package_id', 'occurred_at'],

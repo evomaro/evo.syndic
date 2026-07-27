@@ -30,9 +30,9 @@ return new class extends Migration
         });
 
         Schema::table('budgets', function (Blueprint $table) {
-            $table->timestamp('archived_at')->nullable()->after('locked_by');
+            $table->dateTime('archived_at')->nullable()->after('locked_by');
             $table->foreignId('archived_by')->nullable()->after('archived_at')->constrained('users')->nullOnDelete();
-            $table->timestamp('unlocked_at')->nullable()->after('archived_by');
+            $table->dateTime('unlocked_at')->nullable()->after('archived_by');
             $table->foreignId('unlocked_by')->nullable()->after('unlocked_at')->constrained('users')->nullOnDelete();
             $table->text('unlock_reason')->nullable()->after('unlocked_by');
         });

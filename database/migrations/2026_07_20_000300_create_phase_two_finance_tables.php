@@ -16,9 +16,9 @@ return new class extends Migration
             $table->date('starts_on');
             $table->date('ends_on');
             $table->string('status')->default('draft');
-            $table->timestamp('opened_at')->nullable();
+            $table->dateTime('opened_at')->nullable();
             $table->foreignId('opened_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('closed_at')->nullable();
+            $table->dateTime('closed_at')->nullable();
             $table->foreignId('closed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->text('notes')->nullable();
             $table->json('metadata')->nullable();
@@ -86,9 +86,9 @@ return new class extends Migration
             $table->date('due_date');
             $table->string('status')->default('draft');
             $table->bigInteger('total_cents')->default(0);
-            $table->timestamp('validated_at')->nullable();
+            $table->dateTime('validated_at')->nullable();
             $table->foreignId('validated_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('cancelled_at')->nullable();
+            $table->dateTime('cancelled_at')->nullable();
             $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
             $table->text('cancellation_reason')->nullable();
             $table->json('metadata')->nullable();
@@ -132,7 +132,7 @@ return new class extends Migration
             $table->string('distribution_method_snapshot');
             $table->decimal('distribution_value_snapshot', 18, 6)->nullable();
             $table->decimal('distribution_total_snapshot', 18, 6)->nullable();
-            $table->timestamp('cancelled_at')->nullable();
+            $table->dateTime('cancelled_at')->nullable();
             $table->timestamps();
             $table->index(['residence_id', 'lot_id', 'due_date', 'status'], 'lot_charge_outstanding_idx');
             $table->index(['billed_contact_id', 'issue_date'], 'lot_charge_contact_issue_idx');
@@ -152,7 +152,7 @@ return new class extends Migration
             $table->date('next_generation_on');
             $table->boolean('active')->default(true);
             $table->boolean('auto_validate')->default(false);
-            $table->timestamp('last_generated_at')->nullable();
+            $table->dateTime('last_generated_at')->nullable();
             $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
             $table->timestamps();
             $table->index(['residence_id', 'active', 'next_generation_on'], 'fund_sched_due_idx');
@@ -184,9 +184,9 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->string('status')->default('draft');
             $table->string('idempotency_key', 64)->nullable();
-            $table->timestamp('validated_at')->nullable();
+            $table->dateTime('validated_at')->nullable();
             $table->foreignId('validated_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('reversed_at')->nullable();
+            $table->dateTime('reversed_at')->nullable();
             $table->foreignId('reversed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->text('reversal_reason')->nullable();
             $table->json('metadata')->nullable();
@@ -206,7 +206,7 @@ return new class extends Migration
             $table->bigInteger('amount_cents');
             $table->unsignedInteger('allocation_order');
             $table->foreignId('allocated_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('reversed_at')->nullable();
+            $table->dateTime('reversed_at')->nullable();
             $table->foreignId('reversed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->index(['payment_id', 'reversed_at'], 'pay_alloc_payment_active_idx');
@@ -246,7 +246,7 @@ return new class extends Migration
             $table->string('verification_token_hash', 64)->unique();
             $table->text('verification_token_encrypted');
             $table->string('status')->default('valid');
-            $table->timestamp('generated_at');
+            $table->dateTime('generated_at');
             $table->foreignId('generated_by')->constrained('users')->restrictOnDelete();
             $table->timestamps();
             $table->unique(['residence_id', 'number'], 'fin_doc_res_number_unique');

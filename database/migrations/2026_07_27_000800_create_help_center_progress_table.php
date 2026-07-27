@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('article_id', 100);
-            $table->timestamp('completed_at')->nullable();
+            $table->dateTime('completed_at')->nullable();
             $table->timestamps();
 
             $table->unique(['organization_id', 'user_id', 'article_id'], 'help_progress_tenant_user_article_unique');

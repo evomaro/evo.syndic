@@ -44,7 +44,7 @@ return new class extends Migration
 
         Schema::table('fund_call_schedules', function (Blueprint $table) {
             $table->unsignedSmallInteger('custom_interval_months')->nullable()->after('frequency');
-            $table->timestamp('last_failed_at')->nullable()->after('last_generated_at');
+            $table->dateTime('last_failed_at')->nullable()->after('last_generated_at');
             $table->text('last_error')->nullable()->after('last_failed_at');
         });
 
@@ -55,8 +55,8 @@ return new class extends Migration
         Schema::table('contact_user', function (Blueprint $table) {
             $table->foreignId('organization_id')->nullable()->after('user_id')->constrained()->restrictOnDelete();
             $table->foreignId('linked_by')->nullable()->after('organization_id')->constrained('users')->nullOnDelete();
-            $table->timestamp('linked_at')->nullable()->after('linked_by');
-            $table->timestamp('revoked_at')->nullable()->after('linked_at');
+            $table->dateTime('linked_at')->nullable()->after('linked_by');
+            $table->dateTime('revoked_at')->nullable()->after('linked_at');
             $table->foreignId('revoked_by')->nullable()->after('revoked_at')->constrained('users')->nullOnDelete();
             $table->index(['organization_id', 'user_id', 'revoked_at'], 'contact_user_access_idx');
         });

@@ -49,9 +49,9 @@ return new class extends Migration
             $table->foreignId('parent_mandate_id')->nullable()->constrained('governance_mandates')->restrictOnDelete();
             $table->string('supporting_document_path')->nullable();
             $table->string('supporting_document_checksum', 64)->nullable();
-            $table->timestamp('activated_at')->nullable();
+            $table->dateTime('activated_at')->nullable();
             $table->foreignId('activated_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('ended_at')->nullable();
+            $table->dateTime('ended_at')->nullable();
             $table->foreignId('ended_by')->nullable()->constrained('users')->restrictOnDelete();
             $table->text('end_reason')->nullable();
             $table->string('active_slot', 80)->nullable();
@@ -81,8 +81,8 @@ return new class extends Migration
             $table->dateTime('documents_available_at')->nullable();
             $table->foreignId('chairperson_contact_id')->nullable()->constrained('contacts')->restrictOnDelete();
             $table->foreignId('secretary_user_id')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('opened_at')->nullable();
-            $table->timestamp('closed_at')->nullable();
+            $table->dateTime('opened_at')->nullable();
+            $table->dateTime('closed_at')->nullable();
             $table->string('quorum_status', 24)->default('pending');
             $table->string('minutes_status', 24)->default('not_started');
             $table->text('cancellation_reason')->nullable();
@@ -104,7 +104,7 @@ return new class extends Migration
             $table->foreignId('actor_id')->constrained('users')->restrictOnDelete();
             $table->text('reason')->nullable();
             $table->string('idempotency_key', 100);
-            $table->timestamp('transitioned_at');
+            $table->dateTime('transitioned_at');
             $table->json('snapshot')->nullable();
             $table->timestamps();
             $table->unique(['assembly_id', 'idempotency_key'], 'assembly_transition_idem_uq');
@@ -128,8 +128,8 @@ return new class extends Migration
             $table->boolean('resident_visible')->default(true);
             $table->text('internal_notes')->nullable();
             $table->string('status', 24)->default('draft');
-            $table->timestamp('frozen_at')->nullable();
-            $table->timestamp('removed_at')->nullable();
+            $table->dateTime('frozen_at')->nullable();
+            $table->dateTime('removed_at')->nullable();
             $table->foreignId('removed_by')->nullable()->constrained('users')->restrictOnDelete();
             $table->text('amendment_reason')->nullable();
             $table->timestamps();
@@ -155,9 +155,9 @@ return new class extends Migration
             $table->string('category', 60);
             $table->string('status', 24)->default('draft');
             $table->json('financial_snapshot')->nullable();
-            $table->timestamp('rule_snapshotted_at')->nullable();
+            $table->dateTime('rule_snapshotted_at')->nullable();
             $table->text('reopen_reason')->nullable();
-            $table->timestamp('reopened_at')->nullable();
+            $table->dateTime('reopened_at')->nullable();
             $table->foreignId('reopened_by')->nullable()->constrained('users')->restrictOnDelete();
             $table->timestamps();
             $table->unique(['assembly_id', 'code'], 'resolution_assembly_code_uq');
@@ -174,7 +174,7 @@ return new class extends Migration
             $table->foreignId('governance_rule_version_id')->constrained()->restrictOnDelete();
             $table->json('payload');
             $table->string('checksum', 64);
-            $table->timestamp('snapshotted_at');
+            $table->dateTime('snapshotted_at');
             $table->foreignId('snapshotted_by')->constrained('users')->restrictOnDelete();
             $table->timestamps();
             $table->unique('resolution_id', 'resolution_rule_snapshot_uq');
@@ -201,7 +201,7 @@ return new class extends Migration
             $table->text('restriction_reason')->nullable();
             $table->json('source_ownership_ids');
             $table->boolean('generated_after_cutoff')->default(false);
-            $table->timestamp('snapshotted_at');
+            $table->dateTime('snapshotted_at');
             $table->timestamps();
             $table->unique(['assembly_id', 'entitlement_key'], 'electorate_entitlement_uq');
             $table->index(['assembly_id', 'eligibility_status'], 'electorate_assembly_eligibility_idx');
@@ -215,7 +215,7 @@ return new class extends Migration
             $table->json('before_payload');
             $table->json('after_payload');
             $table->text('reason');
-            $table->timestamp('corrected_at');
+            $table->dateTime('corrected_at');
             $table->timestamps();
             $table->index(['electorate_id', 'corrected_at'], 'electorate_correction_time_idx');
         });
@@ -229,11 +229,11 @@ return new class extends Migration
             $table->foreignId('submitted_by')->constrained('users')->restrictOnDelete();
             $table->text('question_fr');
             $table->text('question_ar')->nullable();
-            $table->timestamp('submission_deadline_at');
+            $table->dateTime('submission_deadline_at');
             $table->string('status', 20)->default('submitted');
             $table->text('decision_reason')->nullable();
             $table->foreignId('decided_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('decided_at')->nullable();
+            $table->dateTime('decided_at')->nullable();
             $table->timestamps();
             $table->index(['assembly_id', 'status', 'created_at'], 'agenda_question_status_idx');
         });

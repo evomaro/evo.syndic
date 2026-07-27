@@ -79,14 +79,14 @@ return new class extends Migration
             $table->boolean('professional_review_required')->default(true);
             $table->string('professional_review_status', 32)->default('pending');
             $table->foreignId('professional_reviewed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('professional_reviewed_at')->nullable();
+            $table->dateTime('professional_reviewed_at')->nullable();
             $table->string('counsel_review_status', 32)->default('not_required');
             $table->foreignId('source_verified_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('source_verified_at')->nullable();
+            $table->dateTime('source_verified_at')->nullable();
             $table->foreignId('approved_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('approved_at')->nullable();
+            $table->dateTime('approved_at')->nullable();
             $table->foreignId('activated_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('activated_at')->nullable();
+            $table->dateTime('activated_at')->nullable();
             $table->foreignId('supersedes_id')->nullable()->constrained('compliance_template_versions')->restrictOnDelete();
             $table->timestamps();
             $table->unique(['template_id', 'version'], 'cmp_template_version_uq');
@@ -118,7 +118,7 @@ return new class extends Migration
             $table->text('override_reason')->nullable();
             $table->string('evidence_reference')->nullable();
             $table->foreignId('decided_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('decided_at');
+            $table->dateTime('decided_at');
             $table->timestamps();
             $table->index(['organization_id', 'residence_id', 'outcome'], 'cmp_decision_scope_outcome_idx');
         });
@@ -143,7 +143,7 @@ return new class extends Migration
             $table->json('deadline_inputs');
             $table->json('deadline_rule_snapshot');
             $table->string('timezone', 64);
-            $table->timestamp('generated_at');
+            $table->dateTime('generated_at');
             $table->timestamps();
             $table->unique(['organization_id', 'occurrence_key'], 'cmp_obligation_occurrence_uq');
             $table->index(['organization_id', 'residence_id', 'current_due_on'], 'cmp_obligation_calendar_idx');
@@ -157,8 +157,8 @@ return new class extends Migration
             $table->string('role', 64)->nullable();
             $table->string('assignment_type', 32);
             $table->foreignId('assigned_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('assigned_at');
-            $table->timestamp('ended_at')->nullable();
+            $table->dateTime('assigned_at');
+            $table->dateTime('ended_at')->nullable();
             $table->foreignId('ended_by')->nullable()->constrained('users')->restrictOnDelete();
             $table->timestamps();
             $table->index(['obligation_id', 'assignment_type', 'ended_at'], 'cmp_assignment_active_idx');
@@ -172,7 +172,7 @@ return new class extends Migration
             $table->text('reason')->nullable();
             $table->foreignId('evidence_id')->nullable();
             $table->foreignId('actor_id')->constrained('users')->restrictOnDelete();
-            $table->timestamp('transitioned_at');
+            $table->dateTime('transitioned_at');
             $table->timestamps();
             $table->index(['obligation_id', 'transitioned_at'], 'cmp_transition_history_idx');
         });
@@ -186,7 +186,7 @@ return new class extends Migration
             $table->string('reference')->nullable();
             $table->text('notes')->nullable();
             $table->foreignId('submitted_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('recorded_at');
+            $table->dateTime('recorded_at');
             $table->timestamps();
             $table->unique(['obligation_id', 'attempt'], 'cmp_submission_attempt_uq');
         });
@@ -200,7 +200,7 @@ return new class extends Migration
             $table->string('type', 48);
             $table->string('title');
             $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('archived_at')->nullable();
+            $table->dateTime('archived_at')->nullable();
             $table->timestamps();
             $table->index(['obligation_id', 'type'], 'cmp_evidence_obligation_type_idx');
         });
@@ -232,7 +232,7 @@ return new class extends Migration
             $table->text('reason');
             $table->string('evidence_reference');
             $table->foreignId('overridden_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('overridden_at');
+            $table->dateTime('overridden_at');
             $table->timestamps();
         });
 
@@ -265,9 +265,9 @@ return new class extends Migration
             $table->string('idempotency_key', 190)->unique();
             $table->string('status', 32)->default('pending');
             $table->unsignedSmallInteger('attempts')->default(0);
-            $table->timestamp('scheduled_at');
-            $table->timestamp('delivered_at')->nullable();
-            $table->timestamp('failed_at')->nullable();
+            $table->dateTime('scheduled_at');
+            $table->dateTime('delivered_at')->nullable();
+            $table->dateTime('failed_at')->nullable();
             $table->string('failure_code')->nullable();
             $table->timestamps();
             $table->index(['status', 'scheduled_at', 'id'], 'cmp_reminder_dispatch_idx');
@@ -283,7 +283,7 @@ return new class extends Migration
             $table->string('idempotency_key', 190)->unique();
             $table->foreignId('recipient_user_id')->nullable()->constrained('users')->restrictOnDelete();
             $table->string('status', 32)->default('pending');
-            $table->timestamp('generated_at');
+            $table->dateTime('generated_at');
             $table->timestamps();
         });
     }

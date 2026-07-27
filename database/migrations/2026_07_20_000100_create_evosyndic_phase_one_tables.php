@@ -224,9 +224,9 @@ return new class extends Migration
             $table->string('email');
             $table->string('role');
             $table->string('token_hash', 64)->unique();
-            $table->timestamp('expires_at');
-            $table->timestamp('accepted_at')->nullable();
-            $table->timestamp('cancelled_at')->nullable();
+            $table->dateTime('expires_at');
+            $table->dateTime('accepted_at')->nullable();
+            $table->dateTime('cancelled_at')->nullable();
             $table->foreignId('invited_by')->constrained('users')->restrictOnDelete();
             $table->timestamps();
             $table->index(['organization_id', 'email']);
@@ -242,8 +242,8 @@ return new class extends Migration
             $table->string('status')->default('uploaded');
             $table->json('column_mapping')->nullable();
             $table->json('report')->nullable();
-            $table->timestamp('completed_at')->nullable();
-            $table->timestamp('rolled_back_at')->nullable();
+            $table->dateTime('completed_at')->nullable();
+            $table->dateTime('rolled_back_at')->nullable();
             $table->timestamps();
             $table->index(['organization_id', 'residence_id', 'status']);
         });

@@ -20,9 +20,9 @@ return new class extends Migration
             $table->text('incidents_ar')->nullable();
             $table->foreignId('reviewed_version_id')->nullable();
             $table->foreignId('signed_version_id')->nullable();
-            $table->timestamp('reviewed_at')->nullable();
+            $table->dateTime('reviewed_at')->nullable();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('signed_at')->nullable();
+            $table->dateTime('signed_at')->nullable();
             $table->foreignId('signed_by')->nullable()->constrained('users')->restrictOnDelete();
             $table->timestamps();
             $table->unique('assembly_id', 'assembly_minutes_uq');
@@ -42,7 +42,7 @@ return new class extends Migration
             $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
             $table->foreignId('parent_version_id')->nullable()->constrained('assembly_minute_versions')->restrictOnDelete();
             $table->text('correction_reason')->nullable();
-            $table->timestamp('signed_at')->nullable();
+            $table->dateTime('signed_at')->nullable();
             $table->json('signatures')->nullable();
             $table->timestamps();
             $table->unique(['assembly_minutes_id', 'version'], 'assembly_minute_version_uq');
@@ -63,12 +63,12 @@ return new class extends Migration
             $table->foreignId('decision_document_version_id')->nullable()->constrained('governance_document_versions')->restrictOnDelete();
             $table->string('recipient_name_snapshot');
             $table->text('address_snapshot')->nullable();
-            $table->timestamp('deadline_at');
+            $table->dateTime('deadline_at');
             $table->string('delivery_channel', 40)->default('pending_legal_delivery');
             $table->string('status', 24)->default('pending');
             $table->unsignedInteger('attempt_count')->default(0);
             $table->string('idempotency_key', 100);
-            $table->timestamp('delivered_at')->nullable();
+            $table->dateTime('delivered_at')->nullable();
             $table->text('failure_reason')->nullable();
             $table->timestamps();
             $table->unique(['assembly_id', 'electorate_id'], 'decision_notification_recipient_uq');
@@ -82,7 +82,7 @@ return new class extends Migration
             $table->string('channel', 40);
             $table->string('status', 24);
             $table->foreignId('actor_id')->constrained('users')->restrictOnDelete();
-            $table->timestamp('attempted_at');
+            $table->dateTime('attempted_at');
             $table->string('proof_disk', 24)->nullable();
             $table->string('proof_path')->nullable();
             $table->string('proof_checksum', 64)->nullable();
@@ -110,7 +110,7 @@ return new class extends Migration
             $table->unsignedBigInteger('related_id')->nullable();
             $table->string('source_key', 120);
             $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('completed_at')->nullable();
+            $table->dateTime('completed_at')->nullable();
             $table->foreignId('completed_by')->nullable()->constrained('users')->restrictOnDelete();
             $table->timestamps();
             $table->unique(['resolution_id', 'source_key'], 'execution_resolution_source_uq');
@@ -128,9 +128,9 @@ return new class extends Migration
             $table->string('channel', 20);
             $table->string('status', 20)->default('queued');
             $table->unsignedInteger('attempt_count')->default(1);
-            $table->timestamp('last_attempted_at');
+            $table->dateTime('last_attempted_at');
             $table->text('last_error')->nullable();
-            $table->timestamp('delivered_at')->nullable();
+            $table->dateTime('delivered_at')->nullable();
             $table->timestamps();
             $table->unique(['user_id', 'event_key', 'channel'], 'gov_notification_dispatch_uq');
             $table->index(['residence_id', 'status', 'created_at'], 'gov_notification_status_idx');

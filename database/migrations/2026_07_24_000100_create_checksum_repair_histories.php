@@ -32,7 +32,7 @@ return new class extends Migration
             $table->string('repair_key', 64)->unique('checksum_repair_key_uq');
             $table->uuid('command_execution_id');
             $table->string('actor_identity', 120);
-            $table->timestamp('created_at');
+            $table->dateTime('created_at');
 
             $table->index(['record_type', 'record_id'], 'checksum_repair_record_idx');
             $table->index(['organization_id', 'residence_id'], 'checksum_repair_scope_idx');

@@ -26,7 +26,7 @@ return new class extends Migration
             $table->text('import_notes')->nullable();
             $table->string('review_status', 40)->default('pending_professional_review');
             $table->foreignId('superseded_by_id')->nullable();
-            $table->timestamp('published_at')->nullable();
+            $table->dateTime('published_at')->nullable();
             $table->foreignId('published_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->unique(['stable_code', 'version'], 'acct_fw_code_version_uq');
@@ -59,7 +59,7 @@ return new class extends Migration
             $table->date('effective_date');
             $table->string('review_status', 40)->default('pending_professional_review');
             $table->foreignId('confirmed_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('confirmed_at')->nullable();
+            $table->dateTime('confirmed_at')->nullable();
             $table->timestamps();
             $table->unique('residence_id', 'acct_book_residence_uq');
             $table->index(['organization_id', 'residence_id'], 'acct_book_tenant_idx');
@@ -76,7 +76,7 @@ return new class extends Migration
             $table->json('explanation_fr');
             $table->json('explanation_ar');
             $table->string('review_status', 40)->default('pending_professional_review');
-            $table->timestamp('assessed_at');
+            $table->dateTime('assessed_at');
             $table->foreignId('assessed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->index(['accounting_book_id', 'financial_exercise_id'], 'acct_assess_book_year_idx');
@@ -88,7 +88,7 @@ return new class extends Migration
             $table->foreignId('accounting_framework_id')->nullable()->after('accounting_book_id')->constrained('accounting_frameworks')->restrictOnDelete();
             $table->foreignId('accounting_regime_assessment_id')->nullable()->after('accounting_framework_id')->constrained('accounting_regime_assessments')->restrictOnDelete();
             $table->string('accounting_regime', 30)->nullable()->after('accounting_regime_assessment_id');
-            $table->timestamp('locked_at')->nullable();
+            $table->dateTime('locked_at')->nullable();
             $table->foreignId('locked_by')->nullable()->constrained('users')->nullOnDelete();
             $table->index(['residence_id', 'reference'], 'fin_ex_res_reference_idx');
         });
@@ -110,10 +110,10 @@ return new class extends Migration
             $table->string('status', 20)->default('open');
             $table->text('lock_reason')->nullable();
             $table->foreignId('locked_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('locked_at')->nullable();
+            $table->dateTime('locked_at')->nullable();
             $table->text('reopen_reason')->nullable();
             $table->foreignId('reopened_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('reopened_at')->nullable();
+            $table->dateTime('reopened_at')->nullable();
             $table->timestamps();
             $table->unique(['financial_exercise_id', 'sequence'], 'acct_period_year_seq_uq');
             $table->unique(['financial_exercise_id', 'starts_on', 'ends_on'], 'acct_period_year_dates_uq');
@@ -198,9 +198,9 @@ return new class extends Migration
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('posted_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('posted_at')->nullable();
+            $table->dateTime('posted_at')->nullable();
             $table->foreignId('reversed_by_actor')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('reversed_at')->nullable();
+            $table->dateTime('reversed_at')->nullable();
             $table->char('posting_fingerprint', 64)->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();
@@ -239,7 +239,7 @@ return new class extends Migration
             $table->json('before_evidence')->nullable();
             $table->json('after_evidence')->nullable();
             $table->string('context', 100)->nullable();
-            $table->timestamp('occurred_at');
+            $table->dateTime('occurred_at');
             $table->timestamps();
             $table->index(['organization_id', 'residence_id', 'occurred_at'], 'acct_activity_tenant_idx');
             $table->index(['record_type', 'record_id'], 'acct_activity_record_idx');

@@ -20,10 +20,10 @@ return new class extends Migration
             $table->json('readiness_evidence');
             $table->string('professional_review_status', 40)->default('pending_professional_review');
             $table->foreignId('activated_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('activated_at');
+            $table->dateTime('activated_at');
             $table->date('deactivated_from')->nullable();
             $table->foreignId('deactivated_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('deactivated_at')->nullable();
+            $table->dateTime('deactivated_at')->nullable();
             $table->text('deactivation_reason')->nullable();
             $table->timestamps();
             $table->unique('accounting_book_id', 'acct_auto_book_uq');
@@ -53,12 +53,12 @@ return new class extends Migration
             $table->text('source_notes')->nullable();
             $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('reviewed_at')->nullable();
+            $table->dateTime('reviewed_at')->nullable();
             $table->foreignId('activated_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('activated_at')->nullable();
+            $table->dateTime('activated_at')->nullable();
             $table->foreignId('superseded_by_id')->nullable();
             $table->foreignId('superseded_by_actor')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('superseded_at')->nullable();
+            $table->dateTime('superseded_at')->nullable();
             $table->timestamps();
             $table->unique(['accounting_book_id', 'stable_code', 'version'], 'acct_rule_book_code_ver_uq');
             $table->index(['accounting_book_id', 'source_domain', 'source_event', 'status'], 'acct_rule_source_status_idx');
@@ -78,7 +78,7 @@ return new class extends Migration
             $table->string('review_status', 40)->default('pending_professional_review');
             $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('reviewed_at')->nullable();
+            $table->dateTime('reviewed_at')->nullable();
             $table->foreignId('superseded_by_id')->nullable();
             $table->timestamps();
             $table->unique(['accounting_book_id', 'mapping_type', 'source_id', 'effective_from'], 'acct_map_book_type_source_date_uq');
@@ -100,7 +100,7 @@ return new class extends Migration
             $table->foreignId('journal_entry_id')->nullable()->constrained('journal_entries')->restrictOnDelete();
             $table->string('status', 24)->default('pending');
             $table->unsignedInteger('attempt_count')->default(0);
-            $table->timestamp('posted_at')->nullable();
+            $table->dateTime('posted_at')->nullable();
             $table->foreignId('reversal_entry_id')->nullable()->constrained('journal_entries')->restrictOnDelete();
             $table->string('failure_classification', 60)->nullable();
             $table->json('failure_details')->nullable();
@@ -130,9 +130,9 @@ return new class extends Migration
             $table->string('status', 24)->default('draft');
             $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('reviewed_at')->nullable();
+            $table->dateTime('reviewed_at')->nullable();
             $table->foreignId('posted_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('posted_at')->nullable();
+            $table->dateTime('posted_at')->nullable();
             $table->foreignId('journal_entry_id')->nullable()->constrained('journal_entries')->restrictOnDelete();
             $table->timestamps();
             $table->unique(['accounting_book_id', 'financial_exercise_id'], 'acct_open_book_exercise_uq');

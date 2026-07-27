@@ -36,7 +36,7 @@ return new class extends Migration
             $table->unsignedInteger('updated_rows')->default(0)->after('created_rows');
             $table->unsignedInteger('skipped_rows')->default(0)->after('updated_rows');
             $table->unsignedInteger('failed_rows')->default(0)->after('skipped_rows');
-            $table->timestamp('processing_started_at')->nullable()->after('report');
+            $table->dateTime('processing_started_at')->nullable()->after('report');
             $table->index(['organization_id', 'file_hash'], 'import_org_file_hash_idx');
         });
 
@@ -51,7 +51,7 @@ return new class extends Migration
             $table->json('before_values')->nullable();
             $table->json('after_values')->nullable();
             $table->text('error')->nullable();
-            $table->timestamp('processed_at')->nullable();
+            $table->dateTime('processed_at')->nullable();
             $table->timestamps();
             $table->unique(['import_batch_id', 'row_number'], 'import_batch_row_unique');
             $table->index(['import_batch_id', 'status']);

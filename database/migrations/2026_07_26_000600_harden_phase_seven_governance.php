@@ -61,17 +61,17 @@ return new class extends Migration
             $table->json('required_evidence')->nullable()->after('notice_requirements');
             $table->string('effective_date_policy', 80)->default('meeting_date')->after('required_evidence');
             $table->foreignId('source_verified_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('source_verified_at')->nullable();
+            $table->dateTime('source_verified_at')->nullable();
             $table->foreignId('professionally_reviewed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('professionally_reviewed_at')->nullable();
+            $table->dateTime('professionally_reviewed_at')->nullable();
             $table->foreignId('counsel_reviewed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('counsel_reviewed_at')->nullable();
+            $table->dateTime('counsel_reviewed_at')->nullable();
             $table->foreignId('approved_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('approved_at')->nullable();
+            $table->dateTime('approved_at')->nullable();
             $table->foreignId('activated_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('activated_at')->nullable();
+            $table->dateTime('activated_at')->nullable();
             $table->foreignId('supersedes_version_id')->nullable()->constrained('governance_rule_versions')->restrictOnDelete();
-            $table->timestamp('immutable_at')->nullable();
+            $table->dateTime('immutable_at')->nullable();
             $table->index(['governance_rule_id', 'status', 'effective_from'], 'gov_rule_version_workflow_idx');
         });
 
@@ -89,9 +89,9 @@ return new class extends Migration
             $table->foreignId('governance_document_version_id')->nullable();
             $table->foreign('governance_document_version_id', 'gov_share_document_fk')->references('id')->on('governance_document_versions')->restrictOnDelete();
             $table->foreignId('verified_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('verified_at')->nullable();
+            $table->dateTime('verified_at')->nullable();
             $table->foreignId('approved_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('approved_at')->nullable();
+            $table->dateTime('approved_at')->nullable();
             $table->date('effective_from')->nullable();
             $table->date('effective_until')->nullable();
             $table->json('configuration');
@@ -114,9 +114,9 @@ return new class extends Migration
             $table->string('convocation_impact', 48)->default('not_assessed');
             $table->text('impact_reason')->nullable();
             $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('frozen_at')->nullable();
-            $table->timestamp('issued_at')->nullable();
-            $table->timestamp('opened_for_session_at')->nullable();
+            $table->dateTime('frozen_at')->nullable();
+            $table->dateTime('issued_at')->nullable();
+            $table->dateTime('opened_for_session_at')->nullable();
             $table->timestamps();
             $table->unique(['assembly_id', 'version'], 'assembly_agenda_version_uq');
             $table->index(['organization_id', 'residence_id', 'status'], 'assembly_agenda_scope_status_idx');
@@ -132,17 +132,17 @@ return new class extends Migration
             $table->date('eligibility_on');
             $table->string('status', 48)->default('preview');
             $table->string('input_fingerprint', 64);
-            $table->timestamp('ownership_boundary_at')->nullable();
+            $table->dateTime('ownership_boundary_at')->nullable();
             $table->unsignedBigInteger('interest_count')->default(0);
             $table->unsignedBigInteger('eligible_weight_numerator')->default(0);
             $table->unsignedBigInteger('weight_denominator')->default(1);
             $table->json('findings');
             $table->foreignId('generated_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('generated_at');
-            $table->timestamp('stale_at')->nullable();
+            $table->dateTime('generated_at');
+            $table->dateTime('stale_at')->nullable();
             $table->text('stale_reason')->nullable();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('reviewed_at')->nullable();
+            $table->dateTime('reviewed_at')->nullable();
             $table->timestamps();
             $table->unique(['assembly_id', 'version'], 'assembly_eligibility_snapshot_uq');
             $table->index(['organization_id', 'residence_id', 'status'], 'assembly_eligibility_scope_status_idx');
@@ -183,7 +183,7 @@ return new class extends Migration
             $table->string('checksum', 64);
             $table->foreignId('recorded_by')->constrained('users')->restrictOnDelete();
             $table->foreignId('reviewed_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('closed_at');
+            $table->dateTime('closed_at');
             $table->timestamps();
             $table->unique('resolution_id', 'assembly_secret_result_resolution_uq');
         });
@@ -198,7 +198,7 @@ return new class extends Migration
             $table->foreignId('evidence_version_id')->nullable();
             $table->foreign('evidence_version_id', 'resolution_transition_evidence_fk')->references('id')->on('governance_document_versions')->restrictOnDelete();
             $table->string('idempotency_key', 120);
-            $table->timestamp('transitioned_at');
+            $table->dateTime('transitioned_at');
             $table->timestamps();
             $table->unique(['resolution_id', 'idempotency_key'], 'assembly_resolution_transition_idem_uq');
         });
@@ -212,7 +212,7 @@ return new class extends Migration
             $table->foreignId('actor_id')->constrained('users')->restrictOnDelete();
             $table->text('note')->nullable();
             $table->foreignId('evidence_version_id')->nullable()->constrained('governance_document_versions')->restrictOnDelete();
-            $table->timestamp('occurred_at');
+            $table->dateTime('occurred_at');
             $table->timestamps();
             $table->index(['resolution_execution_action_id', 'occurred_at'], 'resolution_execution_event_time_idx');
         });
@@ -226,7 +226,7 @@ return new class extends Migration
             $table->foreignId('actor_id')->constrained('users')->restrictOnDelete();
             $table->text('comment')->nullable();
             $table->foreignId('evidence_version_id')->nullable()->constrained('governance_document_versions')->restrictOnDelete();
-            $table->timestamp('approved_at');
+            $table->dateTime('approved_at');
             $table->timestamps();
             $table->unique(['minute_version_id', 'approval_type'], 'assembly_minutes_approval_type_uq');
         });
@@ -239,7 +239,7 @@ return new class extends Migration
             $table->string('vote_mode', 40)->default('recorded_interest');
             $table->string('legal_verification_status', 48)->default('unverified');
             $table->string('finalization_fingerprint', 64)->nullable();
-            $table->timestamp('finalized_at')->nullable();
+            $table->dateTime('finalized_at')->nullable();
             $table->foreignId('finalized_by')->nullable()->constrained('users')->restrictOnDelete();
         });
 
@@ -274,10 +274,10 @@ return new class extends Migration
             $table->string('outcome', 48)->default('indeterminate');
             $table->string('input_fingerprint', 64)->nullable();
             $table->string('legal_verification_status', 48)->default('unverified');
-            $table->timestamp('stale_at')->nullable();
+            $table->dateTime('stale_at')->nullable();
             $table->text('stale_reason')->nullable();
             $table->foreignId('confirmed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('confirmed_at')->nullable();
+            $table->dateTime('confirmed_at')->nullable();
         });
 
         Schema::table('assembly_proxies', function (Blueprint $table) {
@@ -294,15 +294,15 @@ return new class extends Migration
             $table->string('execution_status', 32)->default('not_started');
             $table->string('legal_validity_status', 48)->default('unverified');
             $table->string('vote_mode', 40)->default('recorded_interest');
-            $table->timestamp('voting_opened_at')->nullable();
+            $table->dateTime('voting_opened_at')->nullable();
             $table->foreignId('voting_opened_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('voting_closed_at')->nullable();
+            $table->dateTime('voting_closed_at')->nullable();
             $table->foreignId('voting_closed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('immutable_at')->nullable();
+            $table->dateTime('immutable_at')->nullable();
             $table->text('challenge_reason')->nullable();
-            $table->timestamp('challenged_at')->nullable();
+            $table->dateTime('challenged_at')->nullable();
             $table->text('suspension_reason')->nullable();
-            $table->timestamp('suspended_at')->nullable();
+            $table->dateTime('suspended_at')->nullable();
             $table->foreignId('supersedes_resolution_id')->nullable()->constrained('assembly_resolutions')->restrictOnDelete();
         });
 
@@ -312,14 +312,14 @@ return new class extends Migration
             $table->string('priority', 24)->default('normal');
             $table->json('dependency_action_ids')->nullable();
             $table->foreignId('compliance_obligation_id')->nullable()->constrained('compliance_obligations')->restrictOnDelete();
-            $table->timestamp('reviewed_at')->nullable();
+            $table->dateTime('reviewed_at')->nullable();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->restrictOnDelete();
         });
 
         Schema::table('assembly_minute_versions', function (Blueprint $table) {
             $table->string('finalization_fingerprint', 64)->nullable();
             $table->string('legal_verification_status', 48)->default('unverified');
-            $table->timestamp('immutable_at')->nullable();
+            $table->dateTime('immutable_at')->nullable();
         });
     }
 

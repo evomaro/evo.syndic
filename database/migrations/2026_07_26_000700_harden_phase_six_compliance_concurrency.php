@@ -12,7 +12,7 @@ return new class extends Migration
             $table->text('withdrawal_reason')->nullable()->after('activated_at');
             $table->foreignId('withdrawn_by')->nullable()->after('withdrawal_reason')
                 ->constrained('users')->restrictOnDelete();
-            $table->timestamp('withdrawn_at')->nullable()->after('withdrawn_by');
+            $table->dateTime('withdrawn_at')->nullable()->after('withdrawn_by');
         });
 
         Schema::table('compliance_applicability_decisions', function (Blueprint $table) {
