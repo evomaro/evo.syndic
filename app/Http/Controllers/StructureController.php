@@ -94,7 +94,7 @@ class StructureController extends Controller
             $this->guardBuilding($b, $c);
             foreach (['entrance_id' => Entrance::class, 'floor_id' => Floor::class] as $key => $model) {
                 if (! empty($d[$key])) {
-                    abort_unless($model::whereKey($d[$key])->where('building_id',$b->id)->exists(),422);
+                    abort_unless($model::whereKey($d[$key])->where('building_id', $b->id)->exists(), 422);
                 }
             }
         }

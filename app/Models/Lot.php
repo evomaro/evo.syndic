@@ -42,6 +42,11 @@ class Lot extends Model
         return $this->hasMany(LotOwnership::class);
     }
 
+    public function owners()
+    {
+        return $this->belongsToMany(Contact::class, 'lot_ownerships')->withPivot(['starts_on', 'ends_on', 'ownership_percentage', 'is_primary_contact']);
+    }
+
     public function activeOwnerships(?string $date = null)
     {
         $date ??= now()->toDateString();

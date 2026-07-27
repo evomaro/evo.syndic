@@ -120,7 +120,7 @@ class PhaseTwoFinanceTest extends TestCase
         $this->assertSame(5000, $payment->credit_cents);
         $this->assertSame($first->charges()->count() + $second->charges()->count(), $payment->allocations->count());
         $this->assertSame(20000, $c['account']->fresh()->current_balance_cents);
-        $this->assertSame(20000, FinancialAccountMovement::where('financial_account_id', $c['account']->id)->sum('amount_cents'));
+        $this->assertSame(20000, (int) FinancialAccountMovement::where('financial_account_id', $c['account']->id)->sum('amount_cents'));
     }
 
     public function test_credit_can_be_allocated_later_without_fake_charge(): void

@@ -41,6 +41,11 @@ class Contact extends Model
         return $this->hasMany(LotOwnership::class);
     }
 
+    public function lots()
+    {
+        return $this->belongsToMany(Lot::class, 'lot_ownerships')->withPivot(['starts_on', 'ends_on', 'ownership_percentage', 'is_primary_contact']);
+    }
+
     public function occupancies()
     {
         return $this->hasMany(LotOccupancy::class);

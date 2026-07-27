@@ -30,6 +30,6 @@ class OccupancyController extends Controller
     private function guard(Lot $lot, TenantContext $c)
     {
         abort_unless($lot->residence_id === $c->residence()->id, 404);
-        abort_unless($lot->active,409);
+        abort_unless($lot->active, 409);
     }
 }

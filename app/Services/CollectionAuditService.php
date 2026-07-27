@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 
 class CollectionAuditService
 {
+    public function __construct(private FinancialDocumentChecksumService $checksums) {}
+
     public function audit(array $filters = []): array
     {
         $violations = [];
@@ -49,8 +51,20 @@ class CollectionAuditService
                     $document = $documents->first();
                     if (! Storage::disk($document->disk)->exists($document->path)) {
                         $violations[] = $this->issue('receipt_file_missing', 'document', $document->id);
-                    } elseif (! hash_equals($document->checksum, hash('sha256', Storage::disk($document->disk)->get($document->path)))) {
-                        $violations[] = $this->issue('receipt_checksum_invalid', 'document', $document->id);
+                    } elseif (! $this->checksums->matches($document->checksum, $bytes = Storage::disk($document->disk)->get($document->path))) {
+                        $violations[] = $this->issue('receipt_checksum_invalid', 'document', $document->id, [
+                            'organization_id' => $document->organization_id,
+                            'residence_id' => $document->residence_id,
+                            'payment_id' => $payment->id,
+                            'payment_number' => $payment->number,
+                            'document_number' => $document->number,
+                            'stored_checksum' => $document->checksum,
+                            'calculated_checksum' => $this->checksums->checksum($bytes),
+                            'checksum_version' => $document->checksum_version ?: FinancialDocumentChecksumService::VERSION,
+                            'generated_at' => $document->generated_at?->toIso8601String(),
+                            'created_at' => $document->created_at?->toIso8601String(),
+                            'updated_at' => $document->updated_at?->toIso8601String(),
+                        ]);
                     }
                     if ($payment->status === 'reversed' && $document->status !== 'reversed') {
                         $violations[] = $this->issue('reversed_receipt_still_valid', 'document', $document->id);

@@ -7,13 +7,14 @@ use App\Models\ImportBatch;
 use App\Models\Lot;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ImportService
 {
     public function rows(ImportBatch $batch): array
     {
-        $sheet = IOFactory::load(storage_path('app/private/'.$batch->stored_path))->getActiveSheet()->toArray(null, true, true, false);
+        $sheet = IOFactory::load(Storage::disk('local')->path($batch->stored_path))->getActiveSheet()->toArray(null, true, true, false);
         if (! $sheet) {
             return [];
         }

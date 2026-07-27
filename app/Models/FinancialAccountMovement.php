@@ -27,4 +27,9 @@ class FinancialAccountMovement extends Model
     {
         return $this->belongsTo(Payment::class);
     }
+
+    public function supplierSettlement()
+    {
+        return $this->belongsTo(SupplierSettlement::class);
+    }
 }

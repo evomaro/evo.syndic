@@ -8,6 +8,7 @@ const props = defineProps<{
     isResidence: boolean;
     activity: any[];
     finance?: any[] | null;
+    expenses?: any[] | null;
 }>();
 const { t } = useI18n();
 const cards = computed(() =>
@@ -92,6 +93,60 @@ const cards = computed(() =>
                                     ).toLocaleString()
                                 }}
                                 MAD</b
+                            ></span
+                        >
+                    </div></Link
+                >
+            </div>
+        </section>
+        <section v-if="expenses?.length" class="panel mt-6 overflow-hidden">
+            <div class="panel-head">
+                <h2 class="font-bold">{{ t("expenses") }}</h2>
+                <Link
+                    :href="route('expenses.index')"
+                    class="text-sm font-semibold text-teal-700"
+                    >{{ t("details") }} →</Link
+                >
+            </div>
+            <div class="grid sm:grid-cols-2 xl:grid-cols-3">
+                <Link
+                    v-for="row in expenses"
+                    :key="row.id"
+                    :href="route('expenses.index')"
+                    class="border-b p-5 sm:border-e"
+                    ><b>{{ row.name }}</b>
+                    <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+                        <span class="text-slate-500"
+                            >Budget<b class="block text-slate-900"
+                                >{{
+                                    (row.budget_cents / 100).toLocaleString()
+                                }}
+                                MAD</b
+                            ></span
+                        ><span class="text-slate-500"
+                            >Réel<b
+                                class="block"
+                                :class="
+                                    row.actual_cents > row.budget_cents
+                                        ? 'text-red-700'
+                                        : 'text-slate-900'
+                                "
+                                >{{
+                                    (row.actual_cents / 100).toLocaleString()
+                                }}
+                                MAD</b
+                            ></span
+                        ><span class="text-slate-500"
+                            >À payer<b class="block text-slate-900"
+                                >{{
+                                    (row.payable_cents / 100).toLocaleString()
+                                }}
+                                MAD</b
+                            ></span
+                        ><span class="text-slate-500"
+                            >Contrats à renouveler<b
+                                class="block text-slate-900"
+                                >{{ row.expiring_contracts }}</b
                             ></span
                         >
                     </div></Link

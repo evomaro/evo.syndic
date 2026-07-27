@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\ExpenseCommitment;
 use App\Models\FinancialExercise;
 use App\Models\Payment;
+use App\Models\SupplierInvoiceLine;
+use App\Models\SupplierSettlement;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -68,6 +71,15 @@ class FinancialExerciseLifecycleService
         if ($exercise->payments()->where('status', 'draft')->exists()) {
             $issues[] = __('Des paiements sont encore en brouillon.');
         }
+        if (SupplierInvoiceLine::query()->where('financial_exercise_id', $exercise->id)->whereHas('invoice', fn ($query) => $query->where('status', 'draft'))->exists()) {
+            $issues[] = __('Des factures fournisseurs sont encore en brouillon.');
+        }
+        if (SupplierSettlement::query()->where('financial_exercise_id', $exercise->id)->where('status', 'draft')->exists()) {
+            $issues[] = __('Des règlements fournisseurs sont encore en brouillon.');
+        }
+        if (ExpenseCommitment::query()->where('financial_exercise_id', $exercise->id)->whereIn('status', ['draft', 'submitted'])->exists()) {
+            $issues[] = __('Des engagements sont encore en attente.');
+        }
 
         $payments = $exercise->payments()->whereIn('status', ['validated', 'reversed'])->with(['allocations', 'documents'])->get();
         if ($payments->where('status', 'validated')->contains(fn (Payment $payment) => ! $payment->payer_contact_id)) {
@@ -99,6 +111,9 @@ class FinancialExerciseLifecycleService
         $audit = app(CollectionAuditService::class)->audit(['residence' => $exercise->residence_id, 'exercise' => $exercise->id]);
         if (! $audit['ok']) {
             $issues[] = __('Le rapprochement des encaissements contient des incohérences.');
+        }
+        if (! app(ExpenseAuditService::class)->run(['residence' => $exercise->residence_id, 'exercise' => $exercise->id])['ok']) {
+            $issues[] = __('Le rapprochement des dépenses contient des incohérences.');
         }
 
         return array_values(array_unique($issues));

@@ -1,0 +1,104 @@
+<script setup lang="ts">
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import GovernanceNav from "@/Components/Governance/GovernanceNav.vue";
+import { Link, router, usePage } from "@inertiajs/vue3";
+import { reactive } from "vue";
+const props = defineProps<{ assemblies: any; filters: any }>();
+const ar = usePage<any>().props.locale === "ar";
+const f = reactive({
+    search: props.filters.search ?? "",
+    status: props.filters.status ?? "",
+    sort: props.filters.sort ?? "meeting_date",
+    direction: props.filters.direction ?? "desc",
+});
+const apply = () =>
+    router.get(route("governance.index"), f, {
+        preserveState: true,
+        replace: true,
+    });
+</script>
+<template>
+    <AuthenticatedLayout
+        :title="ar ? 'الجمعيات العامة' : 'Assemblées générales'"
+        ><GovernanceNav />
+        <div class="mb-5 flex flex-wrap gap-3">
+            <input
+                v-model="f.search"
+                @keyup.enter="apply"
+                :placeholder="ar ? 'بحث' : 'Rechercher'"
+                class="min-w-0 flex-1 rounded-xl border-slate-300"
+            /><select
+                v-model="f.status"
+                @change="apply"
+                class="rounded-xl border-slate-300"
+            >
+                <option value="">
+                    {{ ar ? "كل الحالات" : "Tous les statuts" }}
+                </option>
+                <option
+                    v-for="s in [
+                        'draft',
+                        'preparing',
+                        'convocation_issued',
+                        'scheduled',
+                        'in_session',
+                        'deliberations_completed',
+                        'minutes_prepared',
+                        'minutes_signed',
+                        'decisions_notified',
+                        'closed',
+                        'cancelled',
+                        'postponed',
+                        'adjourned_no_quorum',
+                    ]"
+                    :key="s"
+                >
+                    {{ s }}
+                </option></select
+            ><button @click="apply" class="rounded-xl border bg-white px-4">
+                {{ ar ? "تصفية" : "Filtrer" }}</button
+            ><Link
+                :href="route('governance.create')"
+                class="rounded-xl bg-teal-700 px-4 py-2 text-white"
+                >{{ ar ? "جديدة" : "Nouvelle" }}</Link
+            >
+        </div>
+        <div class="space-y-3">
+            <Link
+                v-for="a in assemblies.data"
+                :key="a.id"
+                :href="route('governance.show', a.id)"
+                class="block rounded-2xl border bg-white p-5 hover:border-teal-500"
+                ><div class="flex min-w-0 flex-wrap justify-between gap-2">
+                    <strong class="break-words"
+                        >{{ a.reference }} · {{ a.type }}</strong
+                    ><span
+                        class="rounded-full bg-slate-100 px-3 py-1 text-sm"
+                        >{{ a.status }}</span
+                    >
+                </div>
+                <p class="mt-2 text-sm text-slate-500">
+                    {{ a.meeting_date }} · {{ a.starts_at }} · {{ a.location }}
+                </p></Link
+            >
+            <p
+                v-if="!assemblies.data.length"
+                class="rounded-2xl border bg-white p-8 text-center text-slate-500"
+            >
+                {{ ar ? "لا توجد نتائج" : "Aucun résultat" }}
+            </p>
+        </div>
+        <div class="mt-5 flex flex-wrap gap-2">
+            <Link
+                v-for="l in assemblies.links"
+                :key="l.label"
+                :href="l.url || '#'"
+                v-html="l.label"
+                class="rounded-lg border px-3 py-2"
+                :class="{
+                    'bg-slate-900 text-white': l.active,
+                    'pointer-events-none opacity-50': !l.url,
+                }"
+            /></div
+    ></AuthenticatedLayout>
+</template>

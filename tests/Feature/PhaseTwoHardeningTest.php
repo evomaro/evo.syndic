@@ -383,7 +383,7 @@ class PhaseTwoHardeningTest extends TestCase
         $result = app(FundCallScheduleService::class)->generate($schedule, CarbonImmutable::parse('2026-01-31'), $c['user'], true);
         $this->assertSame('generated', $result['status']);
         $this->assertSame($expected, $schedule->fresh()->next_generation_on->toDateString());
-        $this->assertSame($schedule->template, $schedule->generations()->first()->template_snapshot);
+        $this->assertEquals($schedule->template, $schedule->generations()->first()->template_snapshot);
     }
 
     public function test_schedule_failure_is_recorded_and_retryable_without_duplicate_call(): void

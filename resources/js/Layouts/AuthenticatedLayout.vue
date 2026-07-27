@@ -7,7 +7,9 @@ defineProps<{ title?: string; subtitle?: string }>();
 const page = usePage<any>();
 const { t, dir } = useI18n();
 const collapsed = ref(false);
+const mobileSidebarOpen = ref(false);
 const tenant = computed(() => page.props.tenant ?? {});
+const isResident = computed(() => page.props.auth?.role === "coproprietaire");
 const nav = computed(() =>
     [
         { label: t("dashboard"), href: route("dashboard"), icon: "⌂" },
@@ -21,6 +23,108 @@ const nav = computed(() =>
                   },
               ]
             : []),
+        ...(page.props.auth?.permissions?.includes("view_expenses")
+            ? [
+                  {
+                      label: t("expenses"),
+                      href: route("expenses.index"),
+                      icon: "⇩",
+                      residence: true,
+                  },
+              ]
+            : []),
+        ...(isResident.value
+            ? [
+                  {
+                      label: t("maintenance"),
+                      href: route("portal.maintenance.index"),
+                      icon: "⚒",
+                      residence: true,
+                  },
+              ]
+            : page.props.auth?.permissions?.includes(
+                    "view_maintenance_requests",
+                )
+              ? [
+                    {
+                        label: t("maintenance"),
+                        href: route("maintenance.dashboard"),
+                        icon: "⚒",
+                        residence: true,
+                    },
+                ]
+              : []),
+        ...(isResident.value
+            ? [
+                  {
+                      label: t("governance"),
+                      href: route("owner-governance.index"),
+                      icon: "⚖",
+                      residence: true,
+                  },
+              ]
+            : page.props.auth?.permissions?.includes(
+                    "view_governance_dashboard",
+                )
+              ? [
+                    {
+                        label: t("governance"),
+                        href: route("governance.dashboard"),
+                        icon: "⚖",
+                        residence: true,
+                    },
+                ]
+              : []),
+        ...(isResident.value
+            ? [
+                  {
+                      label: t("documents"),
+                      href: route("portal.documents"),
+                      icon: "▤",
+                      residence: true,
+                  },
+              ]
+            : page.props.auth?.permissions?.includes("view_documents")
+              ? [
+                    {
+                        label: t("documents"),
+                        href: route("documents.index"),
+                        icon: "▤",
+                        residence: true,
+                    },
+                ]
+              : []),
+        ...(isResident.value
+            ? [
+                  {
+                      label: t("announcements"),
+                      href: route("portal.announcements"),
+                      icon: "◉",
+                      residence: true,
+                  },
+              ]
+            : page.props.auth?.permissions?.includes("view_announcements")
+              ? [
+                    {
+                        label: t("announcements"),
+                        href: route("announcements.index"),
+                        icon: "◉",
+                        residence: true,
+                    },
+                ]
+              : []),
+        {
+            label: t("notifications"),
+            href: route("notifications.index"),
+            icon: "♢",
+            residence: true,
+        },
+        {
+            label: t("residentPortal"),
+            href: route("portal.index"),
+            icon: "⌂",
+            residence: true,
+        },
         { label: t("residences"), href: route("residences.index"), icon: "◇" },
         {
             label: t("structure"),
@@ -49,6 +153,35 @@ const active = (href: string) =>
     page.url === new URL(href, window.location.origin).pathname ||
     page.url.startsWith(new URL(href, window.location.origin).pathname + "/");
 const mobileNav = computed<any[]>(() => {
+    if (isResident.value) {
+        return [
+            {
+                label: t("residentPortal"),
+                href: route("portal.index"),
+                icon: "⌂",
+            },
+            {
+                label: t("finance"),
+                href: route("owner-finance.index"),
+                icon: "₣",
+            },
+            {
+                label: t("maintenance"),
+                href: route("portal.maintenance.index"),
+                icon: "⚒",
+            },
+            {
+                label: t("governance"),
+                href: route("owner-governance.index"),
+                icon: "⚖",
+            },
+            {
+                label: t("documents"),
+                href: route("portal.documents"),
+                icon: "▤",
+            },
+        ];
+    }
     if (page.url.startsWith("/finance")) {
         const permissions = page.props.auth?.permissions ?? [];
         return [
@@ -85,6 +218,31 @@ const mobileNav = computed<any[]>(() => {
                 : null,
         ].filter(Boolean);
     }
+    if (page.url.startsWith("/governance")) {
+        return [
+            {
+                label: t("dashboard"),
+                href: route("governance.dashboard"),
+                icon: "⌂",
+            },
+            {
+                label: t("governance"),
+                href: route("governance.index"),
+                icon: "⚖",
+            },
+            { label: t("add"), href: route("governance.create"), icon: "+" },
+            {
+                label: t("members"),
+                href: route("governance.mandates.index"),
+                icon: "♙",
+            },
+            {
+                label: t("report"),
+                href: route("governance.reports"),
+                icon: "▤",
+            },
+        ];
+    }
     return [
         nav.value[0],
         nav.value.find((x) => x.label === t("finance")) ||
@@ -106,6 +264,40 @@ const switchResidence = (event: Event) =>
     router.put(
         route("context.residence", (event.target as HTMLSelectElement).value),
     );
+const loggingOut = ref(false);
+const clearOfflineCaches = async () => {
+    const registration = await navigator.serviceWorker?.getRegistration();
+    const controller = navigator.serviceWorker?.controller;
+    if (!controller) {
+        await registration?.unregister();
+        return;
+    }
+
+    await new Promise<void>((resolve) => {
+        const channel = new MessageChannel();
+        const timeout = window.setTimeout(resolve, 2000);
+        channel.port1.onmessage = (event) => {
+            if (event.data?.type !== "EVOSYNDIC_CACHES_CLEARED") return;
+            window.clearTimeout(timeout);
+            resolve();
+        };
+        controller.postMessage({ type: "CLEAR_EVOSYNDIC_CACHES" }, [
+            channel.port2,
+        ]);
+    });
+    await registration?.unregister();
+};
+const logout = async () => {
+    if (loggingOut.value) return;
+    mobileSidebarOpen.value = false;
+    loggingOut.value = true;
+    await clearOfflineCaches();
+    router.post(
+        route("logout"),
+        {},
+        { onFinish: () => (loggingOut.value = false) },
+    );
+};
 </script>
 
 <template>
@@ -113,26 +305,40 @@ const switchResidence = (event: Event) =>
         <Head :title="title" />
         <aside
             :class="collapsed ? 'w-[76px]' : 'w-64'"
-            class="fixed inset-y-0 z-30 hidden border-e border-slate-200 bg-slate-950 text-white transition-all lg:flex lg:flex-col"
+            class="fixed inset-y-0 z-30 hidden h-screen max-h-full overflow-hidden border-e border-slate-200 bg-slate-950 text-white transition-all supports-[height:100dvh]:h-[100dvh] lg:flex lg:flex-col"
         >
             <div
-                class="flex h-20 items-center gap-3 border-b border-white/10 px-5"
+                :class="collapsed ? 'justify-center px-3' : 'px-5'"
+                class="flex h-20 shrink-0 items-center border-b border-white/10"
             >
-                <div
-                    class="grid size-10 shrink-0 place-items-center rounded-xl bg-teal-400 font-black text-slate-950"
-                >
-                    ES
-                </div>
-                <div v-if="!collapsed">
-                    <p class="font-bold tracking-tight">{{ t("app") }}</p>
-                    <p class="text-xs text-slate-400">Gestion de copropriété</p>
-                </div>
+                <img
+                    v-if="collapsed"
+                    src="/images/evosyndic-symbol.png"
+                    alt="EvoSyndic"
+                    width="128"
+                    height="128"
+                    class="size-11 shrink-0 object-contain"
+                />
+                <img
+                    v-else
+                    src="/images/evosyndic-logo.png"
+                    alt="EvoSyndic"
+                    width="640"
+                    height="158"
+                    class="h-[54px] w-[216px] shrink-0 object-contain"
+                />
             </div>
-            <nav class="flex-1 space-y-1 p-3">
+            <nav
+                :aria-label="t('menu')"
+                tabindex="0"
+                class="sidebar-scroll min-h-0 flex-1 space-y-1 overflow-x-hidden overflow-y-auto overscroll-contain p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-400"
+            >
                 <Link
                     v-for="item in nav"
                     :key="item.href"
                     :href="item.href"
+                    :aria-label="collapsed ? item.label : undefined"
+                    :title="collapsed ? item.label : undefined"
                     :class="
                         active(item.href)
                             ? 'bg-white text-slate-950'
@@ -146,21 +352,99 @@ const switchResidence = (event: Event) =>
                     ><span v-if="!collapsed">{{ item.label }}</span>
                 </Link>
             </nav>
-            <Link
-                :href="route('logout')"
-                method="post"
-                as="button"
-                class="mx-3 flex min-h-11 items-center justify-center rounded-xl border border-white/10 px-3 text-sm text-slate-300 hover:bg-white/10"
+            <div class="shrink-0 border-t border-white/10">
+                <button
+                    type="button"
+                    :disabled="loggingOut"
+                    @click="logout"
+                    class="mx-3 mt-3 flex min-h-11 w-[calc(100%-1.5rem)] items-center justify-center rounded-xl border border-white/10 px-3 text-sm text-slate-300 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 disabled:opacity-60"
+                >
+                    <span v-if="collapsed" aria-hidden="true">{{
+                        loggingOut ? "…" : "↪"
+                    }}</span>
+                    <span v-else>{{ loggingOut ? "…" : t("logout") }}</span>
+                    <span v-if="collapsed" class="sr-only">{{
+                        t("logout")
+                    }}</span>
+                </button>
+                <button
+                    class="m-3 min-h-11 w-[calc(100%-1.5rem)] rounded-xl border border-white/10 text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                    @click="collapsed = !collapsed"
+                    :aria-label="t('menu')"
+                    :aria-expanded="!collapsed"
+                >
+                    {{ collapsed ? "›" : "‹" }}
+                </button>
+            </div>
+        </aside>
+
+        <div
+            v-if="mobileSidebarOpen"
+            class="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm lg:hidden"
+            aria-hidden="true"
+            @click="mobileSidebarOpen = false"
+        ></div>
+        <aside
+            v-if="mobileSidebarOpen"
+            id="mobile-sidebar"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="t('menu')"
+            class="fixed inset-y-0 start-0 z-50 flex h-screen max-h-full w-[min(20rem,calc(100vw-2rem))] flex-col overflow-hidden bg-slate-950 text-white shadow-2xl supports-[height:100dvh]:h-[100dvh] lg:hidden"
+            @keydown.esc="mobileSidebarOpen = false"
+        >
+            <div
+                class="flex h-20 shrink-0 items-center justify-between gap-3 border-b border-white/10 px-5"
             >
-                {{ t("logout") }}
-            </Link>
-            <button
-                class="m-3 min-h-11 rounded-xl border border-white/10 text-slate-300"
-                @click="collapsed = !collapsed"
+                <img
+                    src="/images/evosyndic-logo.png"
+                    alt="EvoSyndic"
+                    width="640"
+                    height="158"
+                    class="h-[54px] w-[216px] max-w-[calc(100%-3.5rem)] object-contain"
+                />
+                <button
+                    type="button"
+                    class="grid size-11 shrink-0 place-items-center rounded-xl border border-white/10 text-xl text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                    :aria-label="t('close')"
+                    @click="mobileSidebarOpen = false"
+                >
+                    ×
+                </button>
+            </div>
+            <nav
                 :aria-label="t('menu')"
+                tabindex="0"
+                class="sidebar-scroll min-h-0 flex-1 space-y-1 overflow-x-hidden overflow-y-auto overscroll-contain p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-400"
             >
-                {{ collapsed ? "›" : "‹" }}
-            </button>
+                <Link
+                    v-for="item in nav"
+                    :key="item.href"
+                    :href="item.href"
+                    :class="
+                        active(item.href)
+                            ? 'bg-white text-slate-950'
+                            : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                    "
+                    class="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition"
+                    @click="mobileSidebarOpen = false"
+                >
+                    <span class="w-6 text-center text-lg" aria-hidden="true">{{
+                        item.icon
+                    }}</span>
+                    <span>{{ item.label }}</span>
+                </Link>
+            </nav>
+            <div class="shrink-0 border-t border-white/10 p-3">
+                <button
+                    type="button"
+                    :disabled="loggingOut"
+                    class="flex min-h-11 w-full items-center justify-center rounded-xl border border-white/10 px-3 text-sm text-slate-300 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 disabled:opacity-60"
+                    @click="logout"
+                >
+                    {{ loggingOut ? "…" : t("logout") }}
+                </button>
+            </div>
         </aside>
 
         <div
@@ -173,11 +457,22 @@ const switchResidence = (event: Event) =>
                 <div
                     class="flex min-h-16 items-center gap-3 px-4 sm:px-6 lg:px-8"
                 >
-                    <div
-                        class="grid size-9 place-items-center rounded-lg bg-slate-950 text-xs font-black text-white lg:hidden"
+                    <button
+                        type="button"
+                        class="grid size-11 shrink-0 place-items-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 lg:hidden"
+                        :aria-label="t('menu')"
+                        aria-controls="mobile-sidebar"
+                        :aria-expanded="mobileSidebarOpen"
+                        @click="mobileSidebarOpen = true"
                     >
-                        ES
-                    </div>
+                        <img
+                            src="/images/evosyndic-symbol.png"
+                            alt="EvoSyndic"
+                            width="128"
+                            height="128"
+                            class="size-10 object-contain"
+                        />
+                    </button>
                     <div class="flex min-w-0 flex-1 items-center gap-2">
                         <select
                             v-if="tenant.organizations?.length"

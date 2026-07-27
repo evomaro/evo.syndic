@@ -12,6 +12,29 @@ const applyLocale = (value: unknown) => {
     document.documentElement.lang = locale;
     document.documentElement.dir = locale === "ar" ? "rtl" : "ltr";
 };
+const registerServiceWorker = () => {
+    if (!("serviceWorker" in navigator) || !window.isSecureContext) return;
+    void navigator.serviceWorker.register("/sw.js");
+};
+const applyPageState = (props: any) => {
+    applyLocale(props.locale);
+    document.documentElement.dataset.authenticated = props.auth?.user
+        ? "true"
+        : "false";
+    if (props.auth?.user) registerServiceWorker();
+};
+
+window.addEventListener("pageshow", (event) => {
+    const navigation = performance.getEntriesByType(
+        "navigation",
+    )[0] as PerformanceNavigationTiming;
+    if (
+        document.documentElement.dataset.authenticated === "true" &&
+        (event.persisted || navigation?.type === "back_forward")
+    ) {
+        window.location.reload();
+    }
+});
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -21,9 +44,9 @@ createInertiaApp({
             import.meta.glob<DefineComponent>("./Pages/**/*.vue"),
         ),
     setup({ el, App, props, plugin }) {
-        applyLocale(props.initialPage.props.locale);
+        applyPageState(props.initialPage.props);
         router.on("navigate", (event) =>
-            applyLocale(event.detail.page.props.locale),
+            applyPageState(event.detail.page.props),
         );
         createApp({ render: () => h(App, props) })
             .use(plugin)

@@ -42,7 +42,7 @@ class ChargeCategoryController extends Controller
             $r->chargeCategories()->firstOrCreate(['code' => $code], ['organization_id' => $r->organization_id, 'name' => $name, 'type' => $type, 'default_distribution_method' => 'allocation_key', 'default_allocation_key_id' => $r->allocationKeys()->where('is_default', true)->value('id')]);
         }
 
-return back()->with('success', __('Catégories suggérées ajoutées.'));
+        return back()->with('success', __('Catégories suggérées ajoutées.'));
     }
 
     private function validated(Request $r, int $residenceId, ?int $ignore = null): array

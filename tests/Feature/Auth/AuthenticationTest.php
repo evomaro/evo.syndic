@@ -14,7 +14,7 @@ class AuthenticationTest extends TestCase
     {
         $response = $this->get('/login');
 
-        $response->assertStatus(200);
+        $response->assertStatus(200)->assertSee('&quot;encryptHistory&quot;:true', false);
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
@@ -50,5 +50,7 @@ class AuthenticationTest extends TestCase
 
         $this->assertGuest();
         $response->assertRedirect('/');
+        $this->get('/')->assertRedirect('/login');
+        $this->get('/login')->assertOk()->assertSee('&quot;clearHistory&quot;:true', false);
     }
 }

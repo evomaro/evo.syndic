@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\MembershipAuthorization;
+use Closure;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -14,6 +15,18 @@ class HandleInertiaRequests extends Middleware
      * @var string
      */
     protected $rootView = 'app';
+
+    public function handle(Request $request, Closure $next)
+    {
+        $response = parent::handle($request, $next);
+
+        if ($request->user()) {
+            $response->headers->set('Cache-Control', 'private, no-store, max-age=0');
+            $response->headers->set('Pragma', 'no-cache');
+        }
+
+        return $response;
+    }
 
     /**
      * Determine the current asset version.
@@ -47,11 +60,13 @@ class HandleInertiaRequests extends Middleware
             $residences = $query->get(['id', 'name', 'status']);
             $residence = $residences->firstWhere('id', $user->current_residence_id);
         }
+        $membership = $organization ? $user?->organizations()->whereKey($organization->id)->first()?->pivot : null;
 
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+                'role' => $membership?->role,
                 'permissions' => $organization && $user ? app(MembershipAuthorization::class)->permissions($user, $organization) : [],
             ],
             'tenant' => [
@@ -61,6 +76,7 @@ class HandleInertiaRequests extends Middleware
                 'residences' => $residences,
             ],
             'locale' => app()->getLocale(),
+            'notificationUnreadCount' => fn () => $request->user()?->unreadNotifications()->count() ?? 0,
             'flash' => ['success' => fn () => $request->session()->get('success')],
         ];
     }
