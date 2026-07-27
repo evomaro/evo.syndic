@@ -37,6 +37,7 @@ class AttendanceProxyService
             $record ??= new AssemblyAttendanceRecord(['assembly_id' => $assembly->id, 'electorate_id' => $electorate->id]);
             $record->fill($payload)->save();
             $record->events()->create(['from_status' => $from, 'to_status' => $status, 'weight_numerator' => $payload['active_weight_numerator'], 'weight_denominator' => $payload['active_weight_denominator'], 'actor_id' => $actor->id, 'reason' => $reason, 'effective_at' => now('UTC')]);
+            $assembly->quorumSnapshots()->whereNull('stale_at')->update(['stale_at' => now('UTC'), 'stale_reason' => 'Attendance changed after quorum calculation.']);
             activity()->performedOn($record)->causedBy($actor)->withProperties(['organization_id' => $assembly->organization_id, 'residence_id' => $assembly->residence_id, 'from' => $from, 'to' => $status, 'reason' => $reason])->log('governance.attendance_changed');
 
             return $record->fresh();
@@ -109,6 +110,6 @@ class AttendanceProxyService
 
     private function sameScope(Assembly $assembly, AssemblyElectorate $electorate): void
     {
-        abort_unless($electorate->assembly_id === $assembly->id && $electorate->organization_id === $assembly->organization_id && $electorate->residence_id === $assembly->residence_id,404);
+        abort_unless($electorate->assembly_id === $assembly->id && $electorate->organization_id === $assembly->organization_id && $electorate->residence_id === $assembly->residence_id, 404);
     }
 }

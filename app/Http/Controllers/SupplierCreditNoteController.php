@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Expenses\SupplierCreditNoteRequest;
 use App\Models\SupplierCreditNote;
 use App\Queries\SupplierInvoiceQuery;
+use App\Services\AccountingSourceStatusService;
 use App\Services\CreditNoteWorkflow;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
@@ -27,7 +28,7 @@ class SupplierCreditNoteController extends Controller
         return Inertia::render('SupplierCreditNotes/Form');
     }
 
-    public function show(SupplierCreditNote $credit, TenantContext $context, SupplierInvoiceQuery $invoices)
+    public function show(SupplierCreditNote $credit, TenantContext $context, SupplierInvoiceQuery $invoices, AccountingSourceStatusService $accountingStatus)
     {
         $this->tenant($credit, $context);
         $this->authorize('view', $credit);
@@ -35,6 +36,9 @@ class SupplierCreditNoteController extends Controller
         return Inertia::render('SupplierCreditNotes/Show', [
             'creditNote' => $credit->load(['supplier', 'allocations.invoice', 'allocations.line']),
             'openInvoices' => $credit->status === 'draft' ? $invoices->openForSupplier($credit->supplier_id, $context) : [],
+            'accountingPosting' => request()->user()->canInOrganization('view_source_postings', $context->organization())
+                ? $accountingStatus->get('supplier_credit_note', $credit->id, $credit->organization_id, $credit->residence_id)
+                : null,
         ]);
     }
 

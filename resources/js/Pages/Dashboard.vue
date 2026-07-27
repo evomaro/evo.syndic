@@ -9,6 +9,7 @@ const props = defineProps<{
     activity: any[];
     finance?: any[] | null;
     expenses?: any[] | null;
+    helpProgress: { completed: number; total: number };
 }>();
 const { t } = useI18n();
 const cards = computed(() =>
@@ -57,6 +58,36 @@ const cards = computed(() =>
                 </p></Link
             >
         </div>
+        <Link
+            v-if="helpProgress.completed < helpProgress.total"
+            :href="route('help.index', 'first-use-checklist')"
+            class="mt-6 block rounded-2xl border border-teal-200 bg-gradient-to-r from-teal-50 to-white p-5 shadow-sm hover:border-teal-400"
+        >
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <p
+                        class="text-xs font-bold uppercase tracking-wider text-teal-700"
+                    >
+                        {{ t("helpCenter") }}
+                    </p>
+                    <h2 class="mt-1 font-bold text-slate-950">
+                        {{ t("setupChecklist") }}
+                    </h2>
+                    <p class="mt-1 text-sm text-slate-600">
+                        {{ helpProgress.completed }}/{{ helpProgress.total }}
+                    </p>
+                </div>
+                <span class="text-2xl text-teal-700" aria-hidden="true">→</span>
+            </div>
+            <div class="mt-4 h-2 overflow-hidden rounded-full bg-teal-100">
+                <div
+                    class="h-full rounded-full bg-teal-600"
+                    :style="{
+                        width: `${Math.round((helpProgress.completed / helpProgress.total) * 100)}%`,
+                    }"
+                ></div>
+            </div>
+        </Link>
         <section v-if="finance?.length" class="panel mt-6 overflow-hidden">
             <div class="panel-head">
                 <h2 class="font-bold">{{ t("finance") }}</h2>

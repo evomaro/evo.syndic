@@ -15,14 +15,14 @@ class BallotService
 {
     public function __construct(private VotingRuleEngine $engine) {}
 
-    public function enter(AssemblyResolution $resolution, AssemblyElectorate $electorate, string $choice, User $actor, ?int $proxyId = null): AssemblyBallot
+    public function enter(AssemblyResolution $resolution, AssemblyElectorate $electorate, string $choice, User $actor, ?int $proxyId = null, ?string $idempotencyKey = null): AssemblyBallot
     {
-        return DB::transaction(function () use ($resolution, $electorate, $choice, $actor, $proxyId) {
+        return DB::transaction(function () use ($resolution, $electorate, $choice, $actor, $proxyId, $idempotencyKey) {
             $resolution = AssemblyResolution::query()->whereKey($resolution->id)->with(['assembly', 'ruleSnapshot'])->lockForUpdate()->firstOrFail();
             if ($resolution->assembly_id !== $electorate->assembly_id || ! in_array($choice, ['for', 'against', 'abstention', 'not_participating', 'ineligible', 'invalid'], true)) {
                 abort(404);
             }
-            if ($resolution->status !== 'authorized' || $resolution->assembly->status !== 'in_session' || $resolution->assembly->quorum_status !== 'met' || ! $resolution->ruleSnapshot) {
+            if (! in_array($resolution->status, ['authorized', 'voting_open'], true) || $resolution->assembly->status !== 'in_session' || $resolution->assembly->quorum_status !== 'met' || ! $resolution->ruleSnapshot) {
                 throw ValidationException::withMessages(['ballot' => __('Le vote contraignant n’est pas ouvert.')]);
             }
             if ($electorate->eligibility_status !== 'eligible') {
@@ -39,7 +39,7 @@ class BallotService
                 }
             }
             try {
-                return AssemblyBallot::create(['organization_id' => $electorate->organization_id, 'residence_id' => $electorate->residence_id, 'assembly_id' => $electorate->assembly_id, 'resolution_id' => $resolution->id, 'electorate_id' => $electorate->id, 'voter_user_id' => $actor->id, 'represented_electorate_id' => $attendance->status === 'represented' ? $electorate->id : null, 'proxy_id' => $proxyId, 'weight_numerator' => $electorate->voting_weight_numerator, 'weight_denominator' => $electorate->voting_weight_denominator, 'ownership_unit_snapshot' => $electorate->only(['contact_name_snapshot', 'lot_ids', 'ownership_fractions', 'snapshot_version']), 'rule_snapshot' => $resolution->ruleSnapshot->payload, 'choice' => $choice, 'entered_by' => $actor->id, 'entered_at' => now('UTC')]);
+                return AssemblyBallot::create(['organization_id' => $electorate->organization_id, 'residence_id' => $electorate->residence_id, 'assembly_id' => $electorate->assembly_id, 'resolution_id' => $resolution->id, 'electorate_id' => $electorate->id, 'voter_user_id' => $actor->id, 'represented_electorate_id' => $attendance->status === 'represented' ? $electorate->id : null, 'proxy_id' => $proxyId, 'weight_numerator' => $electorate->voting_weight_numerator, 'weight_denominator' => $electorate->voting_weight_denominator, 'ownership_unit_snapshot' => $electorate->only(['contact_name_snapshot', 'lot_ids', 'ownership_fractions', 'snapshot_version']), 'rule_snapshot' => $resolution->ruleSnapshot->payload, 'choice' => $choice, 'entered_by' => $actor->id, 'entered_at' => now('UTC'), 'vote_mode' => $resolution->vote_mode, 'idempotency_key' => $idempotencyKey]);
             } catch (QueryException) {
                 throw ValidationException::withMessages(['ballot' => __('Une voix existe déjà pour ce droit de vote et cette résolution.')]);
             }
@@ -50,7 +50,7 @@ class BallotService
     {
         return DB::transaction(function () use ($ballot, $choice, $actor, $reason) {
             $ballot = AssemblyBallot::query()->whereKey($ballot->id)->lockForUpdate()->firstOrFail();
-            if ($ballot->finalized_at || $ballot->resolution->status !== 'authorized' || mb_strlen(trim($reason)) < 10) {
+            if ($ballot->finalized_at || ! in_array($ballot->resolution->status, ['authorized', 'voting_open'], true) || mb_strlen(trim($reason)) < 10) {
                 throw ValidationException::withMessages(['ballot' => __('Une voix finalisée est immuable et toute correction exige un motif détaillé.')]);
             }
             if (! in_array($choice, ['for', 'against', 'abstention', 'not_participating', 'ineligible', 'invalid'], true)) {
@@ -95,7 +95,13 @@ class BallotService
             $previous = $resolution->results()->latest('version')->first();
             $result = ResolutionResult::create(['resolution_id' => $resolution->id, 'version' => (int) $resolution->results()->max('version') + 1, 'total_eligible_weight' => $eligible, 'present_weight' => $present, 'represented_weight' => $represented, 'for_weight' => $for, 'against_weight' => $against, 'abstention_weight' => $abstention, 'invalid_weight' => $invalid, 'non_participating_weight' => $non, 'numerator' => $for, 'denominator' => $denominator, 'threshold_numerator' => $resolution->ruleVersion->threshold_numerator, 'threshold_denominator' => $resolution->ruleVersion->threshold_denominator, 'comparison' => $resolution->ruleVersion->comparison, 'adopted' => $adopted, 'rule_identifier' => $resolution->ruleVersion->identifier, 'rule_version' => $resolution->ruleVersion->version, 'rule_snapshot' => $resolution->ruleSnapshot->payload, 'ballot_snapshot' => $snapshot, 'checksum' => hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR)), 'finalized_by' => $actor->id, 'finalized_at' => now('UTC'), 'supersedes_result_id' => $previous?->id, 'reopen_reason' => $resolution->reopen_reason]);
             $resolution->ballots()->update(['finalized_at' => now('UTC')]);
-            $resolution->update(['status' => $adopted ? 'adopted' : 'rejected', 'final_text_fr' => $resolution->proposed_text_fr, 'final_text_ar' => $resolution->proposed_text_ar]);
+            $verified = $resolution->ruleVersion->status === 'active' && in_array($resolution->ruleVersion->confidence, ['professionally_reviewed', 'counsel_reviewed'], true);
+            $resolution->update([
+                'status' => $adopted ? 'adopted' : 'rejected',
+                'final_text_fr' => $resolution->proposed_text_fr, 'final_text_ar' => $resolution->proposed_text_ar,
+                'legal_validity_status' => $verified ? 'reviewed_configuration' : 'unverified',
+                'voting_closed_at' => now('UTC'), 'voting_closed_by' => $actor->id, 'immutable_at' => now('UTC'),
+            ]);
             activity()->performedOn($resolution)->causedBy($actor)->withProperties(['organization_id' => $resolution->assembly->organization_id, 'residence_id' => $resolution->assembly->residence_id, 'result_id' => $result->id, 'adopted' => $adopted, 'checksum' => $result->checksum])->log('governance.result_finalized');
 
             return $result;

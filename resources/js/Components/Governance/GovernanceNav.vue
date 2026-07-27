@@ -7,6 +7,8 @@ const links = [
     ["governance.index", ar ? "الجمعيات" : "Assemblées"],
     ["governance.mandates.index", ar ? "الولايات" : "Mandats"],
     ["governance.reports", ar ? "التقارير" : "Rapports"],
+    ["governance.rules.index", ar ? "القواعد" : "Règles"],
+    ["governance.diagnostics", ar ? "التدقيق" : "Audits"],
 ];
 </script>
 <template>

@@ -5,7 +5,8 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ExpenseNavigation from "@/Components/Expenses/ExpenseNavigation.vue";
 import FinancialStatusBadge from "@/Components/Expenses/FinancialStatusBadge.vue";
 import FinancialConfirmationPanel from "@/Components/Expenses/FinancialConfirmationPanel.vue";
-const props = defineProps<{ invoice: any }>();
+import AccountingPostingStatus from "@/Components/AccountingPostingStatus.vue";
+const props = defineProps<{ invoice: any; accountingPosting: any }>();
 const attachment = ref<File | null>(null);
 const kind = ref("original");
 const hasOriginal = computed(() =>
@@ -37,6 +38,10 @@ const upload = () => {
         ><ExpenseNavigation />
         <div class="grid gap-5 lg:grid-cols-[1fr_340px]">
             <section class="panel p-5">
+                <AccountingPostingStatus
+                    :posting="accountingPosting"
+                    class="mb-4"
+                />
                 <FinancialStatusBadge :status="invoice.status" />
                 <div
                     v-for="line in invoice.lines"

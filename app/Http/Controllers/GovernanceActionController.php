@@ -268,22 +268,22 @@ class GovernanceActionController extends Controller
     {
         $this->scope($action->resolution->assembly, $c);
         $d = $r->validate(['result' => 'required|string|min:3|max:5000']);
-        $s->complete($action,$d['result'],$r->user());
+        $s->complete($action, $d['result'], $r->user());
 
         return back();
     }
 
-    public function decideQuestion(Request $r,AgendaQuestionSubmission $question,TenantContext $c,AgendaQuestionService $s)
+    public function decideQuestion(Request $r, AgendaQuestionSubmission $question, TenantContext $c, AgendaQuestionService $s)
     {
-        $this->scope($question->assembly,$c);
+        $this->scope($question->assembly, $c);
         $d = $r->validate(['status' => ['required', Rule::in(['accepted', 'rejected'])], 'reason' => 'nullable|string|max:2000']);
-        $s->decide($question,$d['status'],$r->user(),$d['reason'] ?? null);
+        $s->decide($question, $d['status'], $r->user(), $d['reason'] ?? null);
 
         return back();
     }
 
-    private function scope(Assembly $a,TenantContext $c): void
+    private function scope(Assembly $a, TenantContext $c): void
     {
-        abort_unless($a->organization_id === $c->organization()->id && $a->residence_id === $c->residence()->id,404);
+        abort_unless($a->organization_id === $c->organization()->id && $a->residence_id === $c->residence()->id, 404);
     }
 }

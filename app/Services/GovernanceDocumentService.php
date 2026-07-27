@@ -43,7 +43,7 @@ class GovernanceDocumentService
                 app(GovernanceNotificationService::class)->electorateEvent($e, 'supporting_document_available', "governance-document:{$document->id}:version:{$version->id}:electorate:{$e->id}", ['title' => 'Document d’assemblée disponible', 'message' => 'Un document protégé est disponible dans votre espace copropriétaire.'], route('owner-governance.show', $document->assembly));
             }
 
-return $document->fresh();
+            return $document->fresh();
         });
     }
 

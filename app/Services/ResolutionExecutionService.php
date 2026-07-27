@@ -23,8 +23,9 @@ class ResolutionExecutionService
             }
             $action = ResolutionExecutionAction::firstOrCreate(
                 ['resolution_id' => $resolution->id, 'source_key' => $data['source_key']],
-                ['organization_id' => $resolution->assembly->organization_id, 'residence_id' => $resolution->assembly->residence_id, 'action_type' => $data['action_type'], 'responsible_user_id' => $data['responsible_user_id'] ?? null, 'due_on' => $data['due_on'] ?? null, 'description' => $data['description'], 'status' => 'pending', 'created_by' => $actor->id],
+                ['organization_id' => $resolution->assembly->organization_id, 'residence_id' => $resolution->assembly->residence_id, 'action_type' => $data['action_type'], 'responsible_user_id' => $data['responsible_user_id'] ?? null, 'reviewer_user_id' => $data['reviewer_user_id'] ?? null, 'responsible_role' => $data['responsible_role'] ?? null, 'due_on' => $data['due_on'] ?? null, 'priority' => $data['priority'] ?? 'normal', 'dependency_action_ids' => $data['dependency_action_ids'] ?? null, 'compliance_obligation_id' => $data['compliance_obligation_id'] ?? null, 'description' => $data['description'], 'status' => 'pending', 'created_by' => $actor->id],
             );
+            $action->events()->firstOrCreate(['to_status' => 'pending'], ['from_status' => null, 'actor_id' => $actor->id, 'note' => 'Execution action created from adopted technical result.', 'occurred_at' => now('UTC')]);
             activity()->performedOn($action)->causedBy($actor)->withProperties(['organization_id' => $action->organization_id, 'residence_id' => $action->residence_id, 'resolution_id' => $resolution->id])->log('governance.execution_created');
             if ($action->responsible_user_id && $user = User::find($action->responsible_user_id)) {
                 app(GovernanceNotificationService::class)->userEvent($user, $resolution->assembly, 'execution_action_assigned', "execution:{$action->id}:assigned", ['title' => 'Action d’exécution assignée', 'message' => 'Une action issue d’une résolution vous a été assignée.'], route('governance.show', $resolution->assembly));
@@ -88,10 +89,12 @@ class ResolutionExecutionService
     {
         return DB::transaction(function () use ($action, $result, $actor) {
             $action = ResolutionExecutionAction::query()->whereKey($action->id)->lockForUpdate()->firstOrFail();
-            if (! in_array($action->status, ['pending', 'in_progress', 'blocked'], true)) {
+            if (! in_array($action->status, ['pending', 'in_progress', 'blocked'], true) || in_array($action->resolution->status, ['under_challenge', 'suspended'], true)) {
                 throw ValidationException::withMessages(['execution' => __('Cette action ne peut pas être clôturée.')]);
             }
+            $from = $action->status;
             $action->update(['status' => 'completed', 'completion_result' => $result, 'completed_at' => now('UTC'), 'completed_by' => $actor->id]);
+            $action->events()->create(['from_status' => $from, 'to_status' => 'completed', 'actor_id' => $actor->id, 'note' => $result, 'occurred_at' => now('UTC')]);
             activity()->performedOn($action)->causedBy($actor)->withProperties(['organization_id' => $action->organization_id, 'residence_id' => $action->residence_id])->log('governance.execution_completed');
 
             return $action;
@@ -100,7 +103,7 @@ class ResolutionExecutionService
 
     private function assertExecutable(ResolutionExecutionAction $action, string $type): void
     {
-        if (! $action->resolution->finalResult?->adopted || $action->action_type !== $type) {
+        if (! $action->resolution->finalResult?->adopted || $action->action_type !== $type || in_array($action->resolution->status, ['under_challenge', 'suspended'], true)) {
             throw ValidationException::withMessages(['execution' => __('L’action ne correspond pas à une décision adoptée.')]);
         }
     }

@@ -13,7 +13,12 @@ class AssemblyResolution extends Model
 
     protected function casts(): array
     {
-        return ['financial_snapshot' => 'array', 'rule_snapshotted_at' => 'datetime', 'reopened_at' => 'datetime'];
+        return [
+            'financial_snapshot' => 'array', 'rule_snapshotted_at' => 'datetime',
+            'reopened_at' => 'datetime', 'voting_opened_at' => 'datetime',
+            'voting_closed_at' => 'datetime', 'immutable_at' => 'datetime',
+            'challenged_at' => 'datetime', 'suspended_at' => 'datetime',
+        ];
     }
 
     public function assembly()
@@ -54,5 +59,15 @@ class AssemblyResolution extends Model
     public function executionActions()
     {
         return $this->hasMany(ResolutionExecutionAction::class, 'resolution_id');
+    }
+
+    public function transitions()
+    {
+        return $this->hasMany(AssemblyResolutionTransition::class, 'resolution_id');
+    }
+
+    public function secretBallotAggregate()
+    {
+        return $this->hasOne(AssemblySecretBallotAggregate::class, 'resolution_id');
     }
 }

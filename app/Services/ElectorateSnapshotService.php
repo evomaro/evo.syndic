@@ -22,6 +22,7 @@ class ElectorateSnapshotService
             if (! in_array($assembly->status, ['preparing', 'convocation_issued'], true)) {
                 throw ValidationException::withMessages(['status' => __('Le corps électoral ne peut être figé à cette étape.')]);
             }
+            $eligibilityOn = $assembly->eligibility_on ?: $assembly->meeting_date;
             $ownerships = DB::table('lot_ownerships')
                 ->join('lots', 'lots.id', '=', 'lot_ownerships.lot_id')
                 ->join('contacts', 'contacts.id', '=', 'lot_ownerships.contact_id')
@@ -32,8 +33,8 @@ class ElectorateSnapshotService
                     $join->on('lot_allocation_values.lot_id', '=', 'lots.id')->on('lot_allocation_values.allocation_key_id', '=', 'allocation_keys.id');
                 })
                 ->where('lots.residence_id', $assembly->residence_id)->where('lots.active', true)
-                ->whereDate('lot_ownerships.starts_on', '<=', $assembly->meeting_date)
-                ->where(fn ($q) => $q->whereNull('lot_ownerships.ends_on')->orWhereDate('lot_ownerships.ends_on', '>=', $assembly->meeting_date))
+                ->whereDate('lot_ownerships.starts_on', '<=', $eligibilityOn)
+                ->where(fn ($q) => $q->whereNull('lot_ownerships.ends_on')->orWhereDate('lot_ownerships.ends_on', '>=', $eligibilityOn))
                 ->orderBy('lot_ownerships.contact_id')->orderBy('lots.id')
                 ->get(['lot_ownerships.id as ownership_id', 'lot_ownerships.contact_id', 'lot_ownerships.ownership_percentage', 'lots.id as lot_id', 'lots.reference', 'lot_allocation_values.value', 'contacts.type', 'contacts.first_name', 'contacts.last_name', 'contacts.company_name', 'contacts.primary_email', 'contacts.primary_phone', 'contacts.address', 'contacts.preferred_language']);
             if ($ownerships->isEmpty()) {

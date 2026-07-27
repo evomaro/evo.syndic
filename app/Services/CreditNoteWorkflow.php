@@ -13,6 +13,7 @@ class CreditNoteWorkflow
     public function __construct(
         private OrganizationDocumentNumberService $numbers,
         private SupplierPayableService $payables,
+        private AutomatedAccountingPostingService $accounting,
     ) {}
 
     public function validate(SupplierCreditNote $credit, User $actor, array $allocations): SupplierCreditNote
@@ -20,6 +21,8 @@ class CreditNoteWorkflow
         return DB::transaction(function () use ($credit, $actor, $allocations) {
             $credit = SupplierCreditNote::query()->whereKey($credit->id)->with('residence.organization')->lockForUpdate()->firstOrFail();
             if ($credit->status === 'validated') {
+                $this->accounting->postSupplierCreditNote($credit->fresh('allocations'), $actor);
+
                 return $credit->fresh('allocations.line');
             }
             if ($credit->status !== 'draft' || $credit->amount_cents <= 0) {
@@ -93,10 +96,11 @@ class CreditNoteWorkflow
                     'allocations' => $credit->allocations()->get(['supplier_invoice_id', 'supplier_invoice_line_id', 'residence_id', 'amount_cents'])->toArray(),
                 ],
             ]);
+            $this->accounting->postSupplierCreditNote($credit->fresh('allocations'), $actor);
             activity()->performedOn($credit)->causedBy($actor)->withProperties(['organization_id' => $credit->organization_id, 'residence_id' => $credit->residence_id, 'amount_cents' => $credit->amount_cents])->log('supplier_credit.validated');
 
             return $credit->fresh('allocations.line');
-        });
+        }, 5);
     }
 
     public function cancel(SupplierCreditNote $credit, User $actor, string $reason): SupplierCreditNote
@@ -118,9 +122,10 @@ class CreditNoteWorkflow
                 $this->payables->recalculate($invoice);
             }
             $credit->update(['status' => 'cancelled', 'cancelled_at' => now(), 'cancelled_by' => $actor->id, 'cancellation_reason' => $reason]);
+            $this->accounting->reverse('supplier_credit_note', $credit->id, $actor, $reason);
             activity()->performedOn($credit)->causedBy($actor)->withProperties(['organization_id' => $credit->organization_id, 'residence_id' => $credit->residence_id, 'reason' => $reason])->log('supplier_credit.cancelled');
 
             return $credit;
-        });
+        }, 5);
     }
 }

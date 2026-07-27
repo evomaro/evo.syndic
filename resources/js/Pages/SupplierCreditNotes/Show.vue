@@ -5,7 +5,12 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ExpenseNavigation from "@/Components/Expenses/ExpenseNavigation.vue";
 import FinancialStatusBadge from "@/Components/Expenses/FinancialStatusBadge.vue";
 import CreditAllocationEditor from "@/Components/Expenses/CreditAllocationEditor.vue";
-const props = defineProps<{ creditNote: any; openInvoices: any[] }>();
+import AccountingPostingStatus from "@/Components/AccountingPostingStatus.vue";
+const props = defineProps<{
+    creditNote: any;
+    openInvoices: any[];
+    accountingPosting: any;
+}>();
 const allocations = ref<any[]>([
     { supplier_invoice_id: "", amount_cents: props.creditNote.amount_cents },
 ]);
@@ -22,6 +27,10 @@ const money = (cents: number) =>
         subtitle="Affectations"
         ><ExpenseNavigation />
         <section class="panel max-w-3xl p-5">
+            <AccountingPostingStatus
+                class="mb-4"
+                :posting="accountingPosting"
+            />
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <FinancialStatusBadge :status="creditNote.status" />
                 <b>{{ money(creditNote.amount_cents) }}</b>

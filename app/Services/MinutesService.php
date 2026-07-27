@@ -17,7 +17,10 @@ class MinutesService
     public function prepare(Assembly $assembly, array $notes, User $actor): AssemblyMinuteVersion
     {
         return DB::transaction(function () use ($assembly, $notes, $actor) {
-            $assembly = Assembly::query()->whereKey($assembly->id)->with(['residence', 'resolutions.finalResult', 'attendanceRecords.electorate', 'quorumSnapshots', 'chairpersonContact', 'secretaryUser'])->lockForUpdate()->firstOrFail();
+            $assembly = Assembly::query()->whereKey($assembly->id)->with([
+                'residence', 'agendaItems', 'resolutions.finalResult', 'attendanceRecords.electorate',
+                'proxies.principal', 'quorumSnapshots', 'chairpersonContact', 'secretaryUser',
+            ])->lockForUpdate()->firstOrFail();
             if ($assembly->status !== 'deliberations_completed' || $assembly->resolutions->isEmpty() || $assembly->resolutions->contains(fn ($r) => ! $r->finalResult) || ! $assembly->quorumSnapshots->last() || ! $assembly->chairpersonContact || ! $assembly->secretaryUser) {
                 throw ValidationException::withMessages(['minutes' => __('Quorum, résultats finalisés, président et secrétaire sont obligatoires.')]);
             }
@@ -28,7 +31,8 @@ class MinutesService
             $payload = $this->payload($assembly, $minutes);
             $payloadChecksum = hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR));
             $version = (int) $minutes->versions()->max('version') + 1;
-            $html = view('pdf.governance-minutes', compact('payload'))->render();
+            $documentStatus = 'draft';
+            $html = view('pdf.governance-minutes', compact('payload', 'documentStatus'))->render();
             $pdf = Pdf::loadHTML(ArabicPdf::shapeHtml($html, 'ar'))->setPaper('a4')->output();
             $path = "governance/{$assembly->residence_id}/{$assembly->id}/minutes-v{$version}.pdf";
             Storage::disk('local')->put($path, $pdf);
@@ -51,7 +55,8 @@ class MinutesService
             $minutes = $version->minutes;
             if ($minutes->status === 'signed') {
                 throw ValidationException::withMessages(['minutes' => __('Le procès-verbal signé est immuable.')]);
-            }$version->update(['status' => 'reviewed']);
+            }
+            $version->update(['status' => 'reviewed']);
             $minutes->update(['status' => 'reviewed', 'reviewed_version_id' => $version->id, 'reviewed_at' => now('UTC'), 'reviewed_by' => $actor->id]);
             activity()->performedOn($minutes)->causedBy($actor)->withProperties(['organization_id' => $minutes->organization_id, 'residence_id' => $minutes->residence_id, 'version' => $version->version])->log('governance.minutes_reviewed');
 
@@ -65,16 +70,43 @@ class MinutesService
             $minutes = AssemblyMinutes::query()->whereKey($minutes->id)->with(['assembly.resolutions.finalResult', 'reviewedVersion'])->lockForUpdate()->firstOrFail();
             if ($minutes->status === 'signed') {
                 return $minutes->signedVersion;
-            }if ($minutes->status !== 'reviewed' || ! $minutes->reviewedVersion || $minutes->assembly->resolutions->contains(fn ($r) => ! $r->finalResult) || empty($signatures['chairperson']) || empty($signatures['secretary']) || empty($signatures['method'])) {
+            }
+            if ($minutes->status !== 'reviewed' || ! $minutes->reviewedVersion || $minutes->assembly->resolutions->contains(fn ($r) => ! $r->finalResult) || empty($signatures['chairperson']) || empty($signatures['secretary']) || empty($signatures['method'])) {
                 throw ValidationException::withMessages(['signatures' => __('La version relue, tous les résultats et les signatures requises sont obligatoires.')]);
-            }$currentChecksum = hash('sha256', json_encode($minutes->reviewedVersion->frozen_payload, JSON_THROW_ON_ERROR));
+            }
+            $currentChecksum = hash('sha256', json_encode($minutes->reviewedVersion->frozen_payload, JSON_THROW_ON_ERROR));
             if (! hash_equals($minutes->reviewedVersion->payload_checksum, $currentChecksum)) {
                 throw ValidationException::withMessages(['minutes' => __('Le payload figé diffère de la version relue.')]);
-            }$minutes->reviewedVersion->update(['status' => 'signed', 'signed_at' => now('UTC'), 'signatures' => ['chairperson' => $signatures['chairperson'], 'secretary' => $signatures['secretary'], 'method' => $signatures['method'], 'signed_at' => now('UTC')->toIso8601String()]]);
-            $minutes->update(['status' => 'signed', 'signed_version_id' => $minutes->reviewedVersion->id, 'signed_at' => now('UTC'), 'signed_by' => $actor->id]);
-            activity()->performedOn($minutes)->causedBy($actor)->withProperties(['organization_id' => $minutes->organization_id, 'residence_id' => $minutes->residence_id, 'version' => $minutes->reviewedVersion->version, 'checksum' => $minutes->reviewedVersion->checksum])->log('governance.minutes_signed');
+            }
+            $payload = $minutes->reviewedVersion->frozen_payload;
+            $documentStatus = 'finalized';
+            $html = view('pdf.governance-minutes', compact('payload', 'documentStatus'))->render();
+            $pdf = Pdf::loadHTML(ArabicPdf::shapeHtml($html, 'ar'))->setPaper('a4')->output();
+            $versionNumber = (int) $minutes->versions()->max('version') + 1;
+            $path = "governance/{$minutes->residence_id}/{$minutes->assembly_id}/minutes-final-v{$versionNumber}.pdf";
+            Storage::disk('local')->put($path, $pdf);
+            $signed = $minutes->versions()->create([
+                'version' => $versionNumber,
+                'kind' => 'signed_minutes',
+                'status' => 'signed',
+                'path' => $path,
+                'checksum' => hash('sha256', $pdf),
+                'frozen_payload' => $payload,
+                'payload_checksum' => $currentChecksum,
+                'created_by' => $actor->id,
+                'parent_version_id' => $minutes->reviewedVersion->id,
+                'signed_at' => now('UTC'),
+                'signatures' => [
+                    'chairperson' => $signatures['chairperson'],
+                    'secretary' => $signatures['secretary'],
+                    'method' => $signatures['method'],
+                    'signed_at' => now('UTC')->toIso8601String(),
+                ],
+            ]);
+            $minutes->update(['status' => 'signed', 'signed_version_id' => $signed->id, 'signed_at' => now('UTC'), 'signed_by' => $actor->id]);
+            activity()->performedOn($minutes)->causedBy($actor)->withProperties(['organization_id' => $minutes->organization_id, 'residence_id' => $minutes->residence_id, 'version' => $signed->version, 'checksum' => $signed->checksum, 'parent_version_id' => $minutes->reviewedVersion->id])->log('governance.minutes_signed');
 
-            return $minutes->reviewedVersion->fresh();
+            return $signed;
         });
     }
 
@@ -84,7 +116,8 @@ class MinutesService
             $minutes = AssemblyMinutes::query()->whereKey($minutes->id)->with('signedVersion')->lockForUpdate()->firstOrFail();
             if ($minutes->status !== 'signed' || mb_strlen(trim($reason)) < 10) {
                 throw ValidationException::withMessages(['annex' => __('Un procès-verbal signé et un motif détaillé sont requis.')]);
-            }$payload = ['parent_checksum' => $minutes->signedVersion->checksum, 'reason' => trim($reason), 'text_fr' => $textFr, 'text_ar' => $textAr, 'created_at' => now('UTC')->toIso8601String()];
+            }
+            $payload = ['parent_checksum' => $minutes->signedVersion->checksum, 'reason' => trim($reason), 'text_fr' => $textFr, 'text_ar' => $textAr, 'created_at' => now('UTC')->toIso8601String()];
             $html = '<html><meta charset="utf-8"><style>body{font-family:DejaVu Sans;padding:30px}.ar{direction:rtl;text-align:right}</style><body><h1>Annexe corrective / ملحق تصحيحي</h1><p>'.e($textFr).'</p><p class="ar">'.e($textAr).'</p><small>Original SHA-256: '.e($minutes->signedVersion->checksum).'</small></body></html>';
             $pdf = Pdf::loadHTML(ArabicPdf::shapeHtml($html, 'ar'))->output();
             $version = (int) $minutes->versions()->max('version') + 1;
@@ -109,6 +142,57 @@ class MinutesService
     {
         $q = $a->quorumSnapshots->last();
 
-        return ['assembly' => ['id' => $a->id, 'reference' => $a->reference, 'meeting_date' => $a->meeting_date->toDateString(), 'opened_at' => $a->opened_at?->toIso8601String(), 'closed_at' => $a->closed_at?->toIso8601String(), 'chairperson' => $a->chairpersonContact->display_name, 'secretary' => $a->secretaryUser->name], 'residence' => ['id' => $a->residence_id, 'name' => $a->residence->name], 'quorum' => $q->only(['eligible_headcount', 'present_or_represented_headcount', 'eligible_weight_numerator', 'represented_weight_numerator', 'quorum_met', 'checksum']), 'attendance' => $a->attendanceRecords->map(fn ($r) => ['electorate_id' => $r->electorate_id, 'name' => $r->electorate->contact_name_snapshot, 'status' => $r->status, 'weight' => (int) $r->active_weight_numerator])->all(), 'resolutions' => $a->resolutions->map(fn ($r) => ['id' => $r->id, 'code' => $r->code, 'text_fr' => $r->final_text_fr, 'text_ar' => $r->final_text_ar, 'for' => (int) $r->finalResult->for_weight, 'against' => (int) $r->finalResult->against_weight, 'abstention' => (int) $r->finalResult->abstention_weight, 'adopted' => $r->finalResult->adopted, 'rule_identifier' => $r->finalResult->rule_identifier, 'rule_version' => $r->finalResult->rule_version, 'comparison' => $r->finalResult->comparison, 'threshold_numerator' => (int) $r->finalResult->threshold_numerator, 'threshold_denominator' => (int) $r->finalResult->threshold_denominator, 'checksum' => $r->finalResult->checksum])->all(), 'reservations_fr' => $m->reservations_fr, 'reservations_ar' => $m->reservations_ar, 'incidents_fr' => $m->incidents_fr, 'incidents_ar' => $m->incidents_ar];
+        return [
+            'assembly' => [
+                'id' => $a->id, 'reference' => $a->reference,
+                'meeting_date' => $a->meeting_date->toDateString(),
+                'opened_at' => $a->opened_at?->toIso8601String(),
+                'closed_at' => $a->closed_at?->toIso8601String(),
+                'chairperson' => $a->chairpersonContact->display_name,
+                'secretary' => $a->secretaryUser->name,
+            ],
+            'residence' => ['id' => $a->residence_id, 'name' => $a->residence->name],
+            'quorum' => $q->only(['eligible_headcount', 'present_or_represented_headcount', 'eligible_weight_numerator', 'represented_weight_numerator', 'quorum_met', 'checksum']),
+            'agenda' => $a->agendaItems->sortBy('display_order')->map(fn ($item) => [
+                'order' => $item->display_order,
+                'title_fr' => $item->title_fr,
+                'title_ar' => $item->title_ar,
+                'explanation_fr' => $item->explanation_fr,
+                'explanation_ar' => $item->explanation_ar,
+            ])->values()->all(),
+            'attendance' => $a->attendanceRecords->map(fn ($record) => [
+                'electorate_id' => $record->electorate_id,
+                'name' => $record->electorate->contact_name_snapshot,
+                'status' => $record->status,
+                'weight' => (int) $record->active_weight_numerator,
+            ])->all(),
+            'proxies' => $a->proxies->map(fn ($proxy) => [
+                'principal' => $proxy->principal?->contact_name_snapshot,
+                'status' => $proxy->status,
+                'weight' => (int) $proxy->entitlement_weight_numerator,
+                'verification' => $proxy->legal_verification_status,
+            ])->all(),
+            'resolutions' => $a->resolutions->map(fn ($resolution) => [
+                'id' => $resolution->id, 'code' => $resolution->code,
+                'text_fr' => $resolution->final_text_fr, 'text_ar' => $resolution->final_text_ar,
+                'for' => (int) $resolution->finalResult->for_weight,
+                'against' => (int) $resolution->finalResult->against_weight,
+                'abstention' => (int) $resolution->finalResult->abstention_weight,
+                'invalid' => (int) $resolution->finalResult->invalid_weight,
+                'not_cast' => (int) $resolution->finalResult->non_participating_weight,
+                'adopted' => $resolution->finalResult->adopted,
+                'rule_identifier' => $resolution->finalResult->rule_identifier,
+                'rule_version' => $resolution->finalResult->rule_version,
+                'comparison' => $resolution->finalResult->comparison,
+                'threshold_numerator' => (int) $resolution->finalResult->threshold_numerator,
+                'threshold_denominator' => (int) $resolution->finalResult->threshold_denominator,
+                'checksum' => $resolution->finalResult->checksum,
+            ])->all(),
+            'reservations_fr' => $m->reservations_fr,
+            'reservations_ar' => $m->reservations_ar,
+            'incidents_fr' => $m->incidents_fr,
+            'incidents_ar' => $m->incidents_ar,
+            'classification' => 'technical_record_not_certified',
+        ];
     }
 }

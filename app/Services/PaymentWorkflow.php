@@ -15,13 +15,18 @@ use Illuminate\Validation\ValidationException;
 
 class PaymentWorkflow
 {
-    public function __construct(private DocumentNumberService $numbers, private ReceiptService $receipts) {}
+    public function __construct(
+        private DocumentNumberService $numbers,
+        private ReceiptService $receipts,
+        private AutomatedAccountingPostingService $accounting,
+    ) {}
 
     public function validate(Payment $payment, User $actor, string $mode = 'fifo', array $lotIds = [], array $manual = []): Payment
     {
         return DB::transaction(function () use ($payment, $actor, $mode, $lotIds, $manual) {
             $payment = Payment::query()->whereKey($payment->id)->lockForUpdate()->with(['residence', 'exercise', 'account'])->firstOrFail();
             if ($payment->status === 'validated') {
+                $this->accounting->postPayment($payment, $actor);
                 $this->receipts->generate($payment, $actor);
 
                 return $payment->fresh(['allocations', 'documents']);
@@ -71,10 +76,11 @@ class PaymentWorkflow
             $payment->update(['number' => $number]);
             $this->receipts->generate($payment, $actor);
             $payment->update(['status' => 'validated', 'validated_at' => now(), 'validated_by' => $actor->id]);
+            $this->accounting->postPayment($payment->fresh('allocations'), $actor);
             activity()->performedOn($payment)->causedBy($actor)->withProperties(['organization_id' => $payment->organization_id, 'residence_id' => $payment->residence_id, 'from' => 'draft', 'to' => 'validated', 'allocated_cents' => $payment->amount_cents - $remaining, 'credit_cents' => $remaining])->log('payment.validated');
 
             return $payment->fresh(['allocations', 'documents']);
-        });
+        }, 5);
     }
 
     public function allocateCredit(Payment $payment, User $actor, array $manual): Payment
@@ -91,14 +97,17 @@ class PaymentWorkflow
             $this->assertRecoverablePayment($payment);
             $remaining = $payment->credit_cents;
             $order = (int) $payment->allocations()->max('allocation_order') + 1;
+            $lastAllocationId = (int) $payment->allocations()->max('id');
             foreach ($manual as $row) {
                 $remaining = $this->allocate($payment, (int) $row['lot_charge_id'], (int) $row['amount_cents'], $remaining, $actor, $order++, today()->toDateString(), true);
             }
             $this->assertPaymentInvariant($payment);
+            $payment->allocations()->where('id', '>', $lastAllocationId)->orderBy('id')->get()
+                ->each(fn (PaymentAllocation $allocation) => $this->accounting->postPaymentAllocation($allocation, $actor));
             activity()->performedOn($payment)->causedBy($actor)->withProperties(['organization_id' => $payment->organization_id, 'residence_id' => $payment->residence_id, 'remaining_credit_cents' => $remaining])->log('payment.credit_allocated');
 
             return $payment->fresh('allocations');
-        });
+        }, 5);
     }
 
     public function identifyPayer(Payment $payment, User $actor, int $contactId): Payment
@@ -120,7 +129,7 @@ class PaymentWorkflow
             ])->log('payment.payer_identified');
 
             return $payment->fresh('payer');
-        });
+        }, 5);
     }
 
     public function reverse(Payment $payment, User $actor, string $reason): Payment
@@ -149,10 +158,11 @@ class PaymentWorkflow
             FinancialAccountMovement::create(['organization_id' => $payment->organization_id, 'residence_id' => $payment->residence_id, 'financial_account_id' => $payment->financial_account_id, 'financial_exercise_id' => $movementExercise->id, 'payment_id' => $payment->id, 'direction' => 'debit', 'operational_kind' => 'payment_reversal', 'amount_cents' => $payment->amount_cents, 'occurred_on' => now()->toDateString(), 'source_type' => Payment::class, 'source_id' => $payment->id, 'description' => "Extourne {$payment->number}", 'reversal_of_id' => $original->id, 'created_by' => $actor->id]);
             $payment->documents()->where('type', 'receipt')->update(['status' => 'reversed']);
             $payment->update(['status' => 'reversed', 'reversed_at' => now(), 'reversed_by' => $actor->id, 'reversal_reason' => $reason]);
+            $this->accounting->reversePayment($payment, $actor, $reason);
             activity()->performedOn($payment)->causedBy($actor)->withProperties(['organization_id' => $payment->organization_id, 'residence_id' => $payment->residence_id, 'reason' => $reason])->log('payment.reversed');
 
             return $payment;
-        });
+        }, 5);
     }
 
     private function allocate(Payment $payment, int $chargeId, int $amount, int $remaining, User $actor, int $order, string $allocatedOn, bool $advanceCredit = false): int

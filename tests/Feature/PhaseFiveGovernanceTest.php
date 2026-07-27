@@ -305,7 +305,7 @@ class PhaseFiveGovernanceTest extends TestCase
         app(AssemblyWorkflow::class)->transition($a, 'deliberations_completed', $c['manager'], null, 'done');
         $v = app(MinutesService::class)->prepare($a->fresh(), [], $c['manager']);
         app(MinutesService::class)->review($v, $c['manager']);
-        app(MinutesService::class)->sign($v->minutes, ['chairperson' => 'Chair', 'secretary' => 'Secretary', 'method' => 'wet_signature_recorded'], $c['manager']);
+        $signed = app(MinutesService::class)->sign($v->minutes, ['chairperson' => 'Chair', 'secretary' => 'Secretary', 'method' => 'wet_signature_recorded'], $c['manager']);
         $before = Storage::disk('local')->get($v->path);
         try {
             app(ElectorateSnapshotService::class)->correct($a->electorate->first(), ['eligibility_status' => 'restricted'], $c['manager'], 'Correction interdite après signature');
@@ -315,7 +315,9 @@ class PhaseFiveGovernanceTest extends TestCase
         $annex = app(MinutesService::class)->correctiveAnnex($v->minutes, 'Rectification orthographique documentée', 'Correction sans altération du vote', null, $c['manager']);
         $this->assertSame($before, Storage::disk('local')->get($v->path));
         $this->assertSame('corrective_annex', $annex->kind);
-        $this->assertSame($v->id, $annex->parent_version_id);
+        $this->assertSame($signed->id, $annex->parent_version_id);
+        $this->assertNotSame($v->path, $signed->path);
+        $this->assertSame($before, Storage::disk('local')->get($v->path));
     }
 
     public function test_exceptional_result_reopening_versions_without_overwriting_history(): void
@@ -378,8 +380,8 @@ class PhaseFiveGovernanceTest extends TestCase
             $this->fail('Overlapping syndic mandate accepted.');
         } catch (ValidationException) {
         }
-        $this->assertSame('draft',$candidate->fresh()->status);
-        $this->assertDatabaseHas('governance_mandates',['id' => $c['mandate']->id, 'status' => 'active', 'active_slot' => 'syndic']);
+        $this->assertSame('draft', $candidate->fresh()->status);
+        $this->assertDatabaseHas('governance_mandates', ['id' => $c['mandate']->id, 'status' => 'active', 'active_slot' => 'syndic']);
     }
 
     public function test_governance_routes_are_non_cacheable_and_cross_scope_actions_are_hidden(): void
@@ -388,7 +390,7 @@ class PhaseFiveGovernanceTest extends TestCase
         $two = $this->context();
         $assembly = $this->prepared($one);
         $electorate = $assembly->electorate()->first();
-        $this->actingAs($two['manager'])->post(route('governance.electorate.correct',$electorate),['eligibility_status' => 'restricted', 'reason' => 'Tentative inter-résidence interdite'])->assertNotFound();
-        $this->actingAs($one['ownerUsers']->first())->get(route('owner-governance.show',$assembly))->assertOk()->assertHeader('cache-control','max-age=0, no-store, private');
+        $this->actingAs($two['manager'])->post(route('governance.electorate.correct', $electorate), ['eligibility_status' => 'restricted', 'reason' => 'Tentative inter-résidence interdite'])->assertNotFound();
+        $this->actingAs($one['ownerUsers']->first())->get(route('owner-governance.show', $assembly))->assertOk()->assertHeader('cache-control', 'max-age=0, no-store, private');
     }
 }

@@ -8,6 +8,7 @@ use App\Models\FinancialExercise;
 use App\Models\SupplierInvoice;
 use App\Models\SupplierInvoiceAttachment;
 use App\Queries\SupplierInvoiceQuery;
+use App\Services\AccountingSourceStatusService;
 use App\Services\SupplierInvoiceDraftService;
 use App\Services\SupplierInvoiceWorkflow;
 use App\Support\TenantContext;
@@ -34,12 +35,17 @@ class SupplierInvoiceController extends Controller
         return Inertia::render('SupplierInvoices/Form', ['exercises' => FinancialExercise::query()->where('organization_id', $organization->id)->where('status', 'open')->get(['id', 'residence_id', 'name']), 'categories' => ExpenseCategory::query()->where('organization_id', $organization->id)->where('active', true)->get(['id', 'residence_id', 'name']), 'residences' => $residences]);
     }
 
-    public function show(SupplierInvoice $invoice, TenantContext $context, SupplierInvoiceQuery $query)
+    public function show(SupplierInvoice $invoice, TenantContext $context, SupplierInvoiceQuery $query, AccountingSourceStatusService $accounting)
     {
         $this->tenant($invoice, $context);
         $this->authorize('view', $invoice);
 
-        return Inertia::render('SupplierInvoices/Show', ['invoice' => $query->show($invoice, $context->residence()->id)]);
+        return Inertia::render('SupplierInvoices/Show', [
+            'invoice' => $query->show($invoice, $context->residence()->id),
+            'accountingPosting' => request()->user()->canInOrganization('view_source_postings', $context->organization())
+                ? $accounting->get('supplier_invoice', $invoice->id, $invoice->organization_id, $context->residence()->id)
+                : null,
+        ]);
     }
 
     public function search(Request $request, TenantContext $context, SupplierInvoiceQuery $query)

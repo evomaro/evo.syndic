@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\ActivityScope;
+use App\Services\HelpCenterService;
 use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -10,7 +11,7 @@ use Spatie\Activitylog\Models\Activity;
 
 class DashboardController extends Controller
 {
-    public function __invoke(TenantContext $context, ActivityScope $activityScope)
+    public function __invoke(TenantContext $context, ActivityScope $activityScope, HelpCenterService $helpCenter)
     {
         $org = $context->organization;
         if (! $org) {
@@ -46,6 +47,18 @@ class DashboardController extends Controller
                 ->get()->map(fn ($row) => ['id' => $row->id, 'name' => $row->name, 'budget_cents' => (int) $row->budget_cents, 'actual_cents' => max(0, (int) $row->actual_cents - (int) $row->credit_cents), 'payable_cents' => (int) $row->payable_cents, 'expiring_contracts' => (int) $row->expiring_contracts]);
         }
 
-        return Inertia::render('Dashboard', ['stats' => $stats, 'isResidence' => (bool) $res, 'activity' => $activityScope->apply(Activity::query(), $org)->latest()->limit(8)->get(), 'finance' => $finance, 'expenses' => $expenses]);
+        $helpChecklist = collect($helpCenter->checklist(request()->user(), $org, app()->getLocale()));
+
+        return Inertia::render('Dashboard', [
+            'stats' => $stats,
+            'isResidence' => (bool) $res,
+            'activity' => $activityScope->apply(Activity::query(), $org)->latest()->limit(8)->get(),
+            'finance' => $finance,
+            'expenses' => $expenses,
+            'helpProgress' => [
+                'completed' => $helpChecklist->where('complete', true)->count(),
+                'total' => $helpChecklist->count(),
+            ],
+        ]);
     }
 }

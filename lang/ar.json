@@ -76,5 +76,7 @@
     "Ce compte référencé ou par défaut ne peut pas être archivé.": "لا يمكن أرشفة هذا الحساب المرجعي أو الافتراضي.",
     "Aucun exercice correspondant.": "لا توجد سنة مالية مطابقة.",
     "Paiement affecté": "دفعة مخصصة",
-    "Extourne de paiement": "عكس دفعة"
+    "Extourne de paiement": "عكس دفعة",
+    "Outil opérationnel configurable — ne constitue pas un conseil juridique ou fiscal.": "أداة تشغيلية قابلة للتهيئة — لا تشكل استشارة قانونية أو ضريبية.",
+    "Une tâche terminée en interne n’est pas une acceptation par une autorité.": "إتمام المهمة داخلياً لا يعني قبولها من طرف جهة خارجية."
 }

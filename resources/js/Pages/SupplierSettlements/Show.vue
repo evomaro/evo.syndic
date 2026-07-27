@@ -4,7 +4,8 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ExpenseNavigation from "@/Components/Expenses/ExpenseNavigation.vue";
 import FinancialStatusBadge from "@/Components/Expenses/FinancialStatusBadge.vue";
 import SettlementAllocationPreview from "@/Components/Expenses/SettlementAllocationPreview.vue";
-const props = defineProps<{ settlement: any }>();
+import AccountingPostingStatus from "@/Components/AccountingPostingStatus.vue";
+const props = defineProps<{ settlement: any; accountingPosting: any }>();
 const reversal = useForm({ reason: "" });
 const money = (cents: number) =>
     new Intl.NumberFormat("fr-MA", {
@@ -19,6 +20,10 @@ const money = (cents: number) =>
         ><ExpenseNavigation />
         <div class="grid gap-5 lg:grid-cols-2">
             <section class="panel p-5">
+                <AccountingPostingStatus
+                    :posting="accountingPosting"
+                    class="mb-4"
+                />
                 <FinancialStatusBadge :status="settlement.status" />
                 <p class="my-4 text-xl font-bold">
                     {{ money(settlement.amount_cents) }}

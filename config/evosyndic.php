@@ -7,6 +7,45 @@ $governancePermissions = [
     'verify_proxies', 'record_ballots', 'correct_ballots', 'finalize_results', 'reopen_results',
     'prepare_minutes', 'sign_minutes', 'manage_decision_notifications', 'manage_execution_actions',
     'manage_governance_mandates', 'view_governance_reports', 'download_internal_governance_documents',
+    'prepare_assemblies', 'review_assembly_preparation', 'approve_convocations',
+    'manage_agendas', 'manage_eligibility_snapshots', 'override_eligibility',
+    'manage_attendance', 'manage_proxies', 'preview_quorum', 'confirm_quorum',
+    'close_voting', 'view_detailed_ballots', 'draft_minutes', 'review_minutes',
+    'approve_minutes', 'finalize_assemblies', 'manage_resolutions',
+    'challenge_suspend_resolutions', 'assign_resolution_actions', 'execute_resolution_actions',
+    'manage_assembly_evidence', 'export_governance_registers',
+    'view_governance_technical_diagnostics', 'manage_governance_rules',
+    'verify_governance_sources', 'approve_governance_rules', 'activate_governance_rules',
+];
+
+$accountingPermissions = [
+    'view_accounting_configuration', 'manage_accounting_frameworks', 'manage_chart_of_accounts',
+    'manage_accounting_fiscal_years', 'manage_accounting_periods', 'lock_accounting_periods',
+    'reopen_accounting_periods', 'manage_accounting_journals', 'view_accounting_entries',
+    'create_accounting_entries', 'update_accounting_entries', 'post_accounting_entries',
+    'reverse_accounting_entries', 'view_accounting_activity',
+    'view_accounting_automation', 'manage_draft_posting_rules', 'review_posting_rules',
+    'activate_accounting_automation', 'manage_account_mappings', 'view_source_postings',
+    'view_posting_diagnostics', 'manage_opening_balance_drafts', 'review_opening_balances',
+    'post_opening_balances', 'perform_accounting_source_corrections', 'view_phase06b_activity',
+    'view_journal_reports', 'view_general_ledger', 'view_account_ledgers', 'view_trial_balance',
+    'view_accounting_receivables', 'view_accounting_payables', 'view_budget_actual',
+    'view_accounting_reconciliation', 'export_accounting_reports', 'view_accounting_integrity_details',
+    'view_closing_readiness', 'prepare_period_closing', 'close_accounting_period',
+    'prepare_fiscal_year_closing', 'review_fiscal_year_closing', 'approve_fiscal_year_closing',
+    'execute_fiscal_year_closing', 'preview_carry_forward', 'execute_carry_forward',
+    'request_accounting_reopening', 'approve_accounting_reopening', 'execute_accounting_reopening',
+    'view_closing_technical_diagnostics', 'export_closing_evidence',
+];
+
+$compliancePermissions = [
+    'view_compliance_calendar', 'view_compliance_obligations', 'manage_obligation_templates',
+    'verify_official_sources', 'approve_template_versions', 'activate_template_versions',
+    'manage_compliance_applicability', 'override_compliance_applicability', 'assign_compliance_obligations',
+    'prepare_compliance_obligations', 'review_compliance_obligations', 'record_compliance_submissions',
+    'record_external_acknowledgement', 'record_compliance_rejection', 'manage_compliance_evidence',
+    'manage_compliance_reminder_policies', 'view_compliance_reminder_diagnostics',
+    'export_compliance_registers', 'view_technical_compliance_audits',
 ];
 
 return [
@@ -32,14 +71,55 @@ return [
         'manage_maintenance_equipment', 'manage_preventive_plans', 'view_maintenance_reports',
         'create_work_order_invoices', 'download_internal_maintenance_attachments',
         ...$governancePermissions,
+        ...$accountingPermissions,
+        ...$compliancePermissions,
     ],
     'roles' => [
         'owner' => ['*'],
         'administrator' => ['manage_organization', 'manage_team', 'view_residences', 'create_residences', 'edit_residences', 'manage_property_structure', 'manage_contacts', 'manage_ownerships', 'manage_occupancies', 'manage_allocation_keys', 'import_data', 'view_activity_logs', 'view_finance', 'manage_financial_exercises', 'manage_financial_accounts', 'manage_charge_categories', 'create_fund_calls', 'validate_fund_calls', 'cancel_fund_calls', 'create_payments', 'validate_payments', 'reverse_payments', 'allocate_credit', 'view_outstanding', 'view_statements', 'export_finance', 'view_financial_activity', 'view_suppliers', 'manage_suppliers', 'view_supplier_private_data', 'manage_supplier_contracts', 'view_expenses', 'create_expenses', 'validate_expenses', 'cancel_expenses', 'approve_commitments', 'create_settlements', 'validate_settlements', 'reverse_settlements', 'manage_credit_notes', 'view_supplier_payables', 'export_expenses', 'manage_budgets', 'approve_budgets', 'view_documents', 'manage_documents', 'publish_documents', 'view_announcements', 'manage_announcements', 'publish_announcements', 'view_expense_transparency', 'manage_notification_preferences', 'create_cross_residence_expenses', 'view_maintenance_requests', 'create_maintenance_requests', 'manage_maintenance_requests', 'transition_maintenance_requests', 'assign_maintenance_requests', 'manage_maintenance_categories', 'view_maintenance_quotations', 'manage_maintenance_quotations', 'accept_maintenance_quotations', 'view_work_orders', 'manage_work_orders', 'complete_work_orders', 'validate_work_orders', 'manage_maintenance_equipment', 'manage_preventive_plans', 'view_maintenance_reports', 'create_work_order_invoices', 'download_internal_maintenance_attachments', ...$governancePermissions],
-        'manager' => ['view_residences', 'create_residences', 'edit_residences', 'manage_property_structure', 'manage_contacts', 'manage_ownerships', 'manage_occupancies', 'manage_allocation_keys', 'import_data', 'view_activity_logs', 'view_finance', 'create_fund_calls', 'create_payments', 'view_outstanding', 'view_statements', 'view_financial_activity', 'view_suppliers', 'manage_suppliers', 'manage_supplier_contracts', 'view_expenses', 'create_expenses', 'approve_commitments', 'view_supplier_payables', 'manage_budgets', 'view_documents', 'manage_documents', 'publish_documents', 'view_announcements', 'manage_announcements', 'publish_announcements', 'view_expense_transparency', 'manage_notification_preferences', 'view_maintenance_requests', 'create_maintenance_requests', 'manage_maintenance_requests', 'transition_maintenance_requests', 'assign_maintenance_requests', 'manage_maintenance_categories', 'view_maintenance_quotations', 'manage_maintenance_quotations', 'accept_maintenance_quotations', 'view_work_orders', 'manage_work_orders', 'complete_work_orders', 'validate_work_orders', 'manage_maintenance_equipment', 'manage_preventive_plans', 'view_maintenance_reports', 'create_work_order_invoices', 'download_internal_maintenance_attachments', ...$governancePermissions],
+        'manager' => ['view_residences', 'create_residences', 'edit_residences', 'manage_property_structure', 'manage_contacts', 'manage_ownerships', 'manage_occupancies', 'manage_allocation_keys', 'import_data', 'view_activity_logs', 'view_finance', 'create_fund_calls', 'create_payments', 'view_outstanding', 'view_statements', 'view_financial_activity', 'view_suppliers', 'manage_suppliers', 'manage_supplier_contracts', 'view_expenses', 'create_expenses', 'approve_commitments', 'view_supplier_payables', 'manage_budgets', 'view_documents', 'manage_documents', 'publish_documents', 'view_announcements', 'manage_announcements', 'publish_announcements', 'view_expense_transparency', 'manage_notification_preferences', 'view_maintenance_requests', 'create_maintenance_requests', 'manage_maintenance_requests', 'transition_maintenance_requests', 'assign_maintenance_requests', 'manage_maintenance_categories', 'view_maintenance_quotations', 'manage_maintenance_quotations', 'accept_maintenance_quotations', 'view_work_orders', 'manage_work_orders', 'complete_work_orders', 'validate_work_orders', 'manage_maintenance_equipment', 'manage_preventive_plans', 'view_maintenance_reports', 'create_work_order_invoices', 'download_internal_maintenance_attachments'],
         'accountant' => ['view_residences', 'manage_contacts', 'manage_allocation_keys', 'import_data', 'view_activity_logs', 'view_finance', 'manage_financial_exercises', 'manage_financial_accounts', 'manage_charge_categories', 'create_fund_calls', 'validate_fund_calls', 'cancel_fund_calls', 'create_payments', 'validate_payments', 'reverse_payments', 'allocate_credit', 'view_outstanding', 'view_statements', 'export_finance', 'view_financial_activity', 'view_suppliers', 'manage_suppliers', 'view_supplier_private_data', 'manage_supplier_contracts', 'view_expenses', 'create_expenses', 'validate_expenses', 'cancel_expenses', 'approve_commitments', 'create_settlements', 'validate_settlements', 'reverse_settlements', 'manage_credit_notes', 'view_supplier_payables', 'export_expenses', 'manage_budgets', 'approve_budgets', 'view_documents', 'view_announcements', 'view_expense_transparency', 'manage_notification_preferences'],
         'maintenance_agent' => ['view_residences', 'manage_contacts', 'view_suppliers', 'manage_supplier_contracts', 'view_maintenance_requests', 'create_maintenance_requests', 'manage_maintenance_requests', 'transition_maintenance_requests', 'assign_maintenance_requests', 'view_maintenance_quotations', 'manage_maintenance_quotations', 'view_work_orders', 'manage_work_orders', 'complete_work_orders', 'manage_maintenance_equipment', 'manage_preventive_plans', 'view_maintenance_reports', 'download_internal_maintenance_attachments'],
         'auditor' => ['view_residences', 'view_activity_logs', 'view_finance', 'view_outstanding', 'view_statements', 'export_finance', 'view_financial_activity', 'view_suppliers', 'view_expenses', 'view_supplier_payables', 'export_expenses', 'view_documents', 'view_announcements', 'view_expense_transparency', 'view_maintenance_requests', 'view_maintenance_quotations', 'view_work_orders', 'view_maintenance_reports'],
+    ],
+    'accounting_roles' => [
+        'administrator' => $accountingPermissions,
+        'accountant' => $accountingPermissions,
+        'manager' => ['view_accounting_configuration', 'view_accounting_entries', 'create_accounting_entries', 'update_accounting_entries', 'view_accounting_activity', 'view_accounting_automation', 'view_source_postings', 'view_posting_diagnostics', 'view_phase06b_activity', 'view_journal_reports', 'view_general_ledger', 'view_account_ledgers', 'view_trial_balance', 'view_accounting_receivables', 'view_accounting_payables', 'view_budget_actual', 'view_accounting_reconciliation', 'view_closing_readiness'],
+        'auditor' => ['view_accounting_configuration', 'view_accounting_entries', 'view_accounting_activity', 'view_accounting_automation', 'view_source_postings', 'view_posting_diagnostics', 'view_phase06b_activity', 'view_journal_reports', 'view_general_ledger', 'view_account_ledgers', 'view_trial_balance', 'view_accounting_receivables', 'view_accounting_payables', 'view_budget_actual', 'view_accounting_reconciliation', 'export_accounting_reports', 'view_accounting_integrity_details', 'view_closing_readiness', 'view_closing_technical_diagnostics', 'export_closing_evidence'],
+    ],
+    'compliance_roles' => [
+        'administrator' => $compliancePermissions,
+        'manager' => [
+            'view_compliance_calendar', 'view_compliance_obligations', 'manage_compliance_applicability',
+            'assign_compliance_obligations', 'prepare_compliance_obligations', 'review_compliance_obligations',
+            'record_compliance_submissions', 'manage_compliance_evidence', 'manage_compliance_reminder_policies',
+            'view_compliance_reminder_diagnostics', 'export_compliance_registers',
+        ],
+        'accountant' => $compliancePermissions,
+        'auditor' => [
+            'view_compliance_calendar', 'view_compliance_obligations', 'view_compliance_reminder_diagnostics',
+            'export_compliance_registers', 'view_technical_compliance_audits',
+        ],
+    ],
+    'governance_roles' => [
+        'administrator' => $governancePermissions,
+        'manager' => [
+            'view_governance_dashboard', 'view_assemblies', 'create_assemblies', 'prepare_assemblies',
+            'manage_agendas', 'manage_eligibility_snapshots', 'manage_attendance', 'manage_proxies',
+            'preview_quorum', 'record_ballots', 'draft_minutes', 'manage_resolutions',
+            'assign_resolution_actions', 'execute_resolution_actions', 'manage_assembly_evidence',
+            'export_governance_registers', 'view_governance_reports',
+        ],
+        'accountant' => [
+            'view_assemblies', 'view_governance_reports', 'view_detailed_ballots',
+            'export_governance_registers',
+        ],
+        'auditor' => [
+            'view_governance_dashboard', 'view_assemblies', 'view_governance_reports',
+            'view_detailed_ballots', 'export_governance_registers',
+            'view_governance_technical_diagnostics',
+        ],
     ],
     'maintenance' => ['reopen_days' => 7],
 ];

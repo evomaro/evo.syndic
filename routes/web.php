@@ -1,10 +1,15 @@
 <?php
 
+use App\Http\Controllers\AccountingAutomationController;
+use App\Http\Controllers\AccountingClosingController;
+use App\Http\Controllers\AccountingController;
+use App\Http\Controllers\AccountingReportController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AllocationController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\ChargeCategoryController;
+use App\Http\Controllers\ComplianceController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContextController;
 use App\Http\Controllers\DashboardController;
@@ -20,7 +25,10 @@ use App\Http\Controllers\FundCallScheduleController;
 use App\Http\Controllers\GovernanceActionController;
 use App\Http\Controllers\GovernanceController;
 use App\Http\Controllers\GovernanceDocumentController;
+use App\Http\Controllers\GovernanceExportController;
 use App\Http\Controllers\GovernanceMandateController;
+use App\Http\Controllers\GovernanceRuleController;
+use App\Http\Controllers\HelpCenterController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\LotController;
@@ -36,6 +44,7 @@ use App\Http\Controllers\OwnerFinancePortalController;
 use App\Http\Controllers\OwnerGovernanceController;
 use App\Http\Controllers\OwnershipController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PhaseSevenGovernanceController;
 use App\Http\Controllers\PreventiveMaintenanceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReceiptController;
@@ -80,6 +89,13 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['verified', 'tenant'])->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::get('/help/{article?}', [HelpCenterController::class, 'index'])
+            ->where('article', '[a-z0-9-]+')
+            ->name('help.index');
+        Route::put('/help/progress/{step}', [HelpCenterController::class, 'progress'])
+            ->where('step', '[a-z0-9-]+')
+            ->name('help.progress');
+        Route::delete('/help/progress', [HelpCenterController::class, 'reset'])->name('help.progress.reset');
         Route::put('/context/organizations/{organization}', [ContextController::class, 'organization'])->name('context.organization');
         Route::put('/context/residences/{residence}', [ContextController::class, 'residence'])->name('context.residence');
 
@@ -137,6 +153,77 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/import-templates/{type}', [ImportController::class, 'template'])->name('imports.template');
         });
         Route::get('/activity', ActivityController::class)->middleware('tenant.permission:view_activity_logs')->name('activity.index');
+        Route::get('/compliance', [ComplianceController::class, 'index'])->middleware('tenant.permission:view_compliance_calendar')->name('compliance.index');
+        Route::get('/compliance/obligations/{obligation}', [ComplianceController::class, 'show'])->middleware('tenant.permission:view_compliance_obligations')->name('compliance.obligations.show');
+        Route::post('/compliance/authorities', [ComplianceController::class, 'authority'])->middleware('tenant.permission:manage_obligation_templates')->name('compliance.authorities.store');
+        Route::post('/compliance/sources', [ComplianceController::class, 'source'])->middleware('tenant.permission:manage_obligation_templates')->name('compliance.sources.store');
+        Route::post('/compliance/sources/{source}/verify', [ComplianceController::class, 'verifySource'])->middleware('tenant.permission:verify_official_sources')->name('compliance.sources.verify');
+        Route::post('/compliance/templates', [ComplianceController::class, 'template'])->middleware('tenant.permission:manage_obligation_templates')->name('compliance.templates.store');
+        Route::post('/compliance/template-versions/{version}/review', [ComplianceController::class, 'reviewVersion'])->middleware('tenant.permission:approve_template_versions')->name('compliance.versions.review');
+        Route::post('/compliance/template-versions/{version}/amend', [ComplianceController::class, 'amend'])->middleware('tenant.permission:manage_obligation_templates')->name('compliance.versions.amend');
+        Route::post('/compliance/template-versions/{version}/approve', [ComplianceController::class, 'approve'])->middleware('tenant.permission:approve_template_versions')->name('compliance.versions.approve');
+        Route::post('/compliance/template-versions/{version}/activate', [ComplianceController::class, 'activate'])->middleware('tenant.permission:activate_template_versions')->name('compliance.versions.activate');
+        Route::post('/compliance/template-versions/{version}/withdraw', [ComplianceController::class, 'withdrawVersion'])->middleware('tenant.permission:activate_template_versions')->name('compliance.versions.withdraw');
+        Route::post('/compliance/template-versions/{version}/applicability', [ComplianceController::class, 'applicability'])->middleware('tenant.permission:manage_compliance_applicability')->name('compliance.applicability.store');
+        Route::post('/compliance/applicability/{decision}/override', [ComplianceController::class, 'overrideApplicability'])->middleware('tenant.permission:override_compliance_applicability')->name('compliance.applicability.override');
+        Route::post('/compliance/applicability/{decision}/generate', [ComplianceController::class, 'generate'])->middleware('tenant.permission:manage_compliance_applicability')->name('compliance.obligations.generate');
+        Route::post('/compliance/obligations/{obligation}/assign', [ComplianceController::class, 'assign'])->middleware('tenant.permission:assign_compliance_obligations')->name('compliance.obligations.assign');
+        Route::post('/compliance/obligations/{obligation}/submissions', [ComplianceController::class, 'submission'])->middleware('tenant.permission:record_compliance_submissions')->name('compliance.submissions.store');
+        Route::post('/compliance/obligations/{obligation}/transition', [ComplianceController::class, 'transition'])->middleware('tenant.permission:view_compliance_obligations')->name('compliance.obligations.transition');
+        Route::post('/compliance/obligations/{obligation}/deadline-override', [ComplianceController::class, 'overrideDeadline'])->middleware('tenant.permission:manage_compliance_applicability')->name('compliance.obligations.deadline-override');
+        Route::post('/compliance/obligations/{obligation}/evidence', [ComplianceController::class, 'evidence'])->middleware('tenant.permission:manage_compliance_evidence')->name('compliance.evidence.store');
+        Route::get('/compliance/evidence-versions/{version}/download', [ComplianceController::class, 'download'])->middleware('tenant.permission:view_compliance_obligations')->name('compliance.evidence.download');
+        Route::post('/compliance/reminder-policies', [ComplianceController::class, 'policy'])->middleware('tenant.permission:manage_compliance_reminder_policies')->name('compliance.reminder-policies.store');
+        Route::get('/compliance/export/{format}', [ComplianceController::class, 'export'])->middleware('tenant.permission:export_compliance_registers')->name('compliance.export');
+        Route::get('/accounting', [AccountingController::class, 'index'])->middleware('tenant.permission:view_accounting_configuration')->name('accounting.index');
+        Route::post('/accounting/adopt', [AccountingController::class, 'adopt'])->middleware('tenant.permission:manage_accounting_frameworks')->name('accounting.adopt');
+        Route::post('/accounting/regime-assessments', [AccountingController::class, 'recordRegimeAssessment'])->middleware('tenant.permission:manage_accounting_frameworks')->name('accounting.regime-assessments.store');
+        Route::post('/accounting/frameworks/{framework}/successors', [AccountingController::class, 'createFrameworkSuccessor'])->middleware('tenant.permission:manage_accounting_frameworks')->name('accounting.frameworks.successors.store');
+        Route::post('/accounting/subaccounts', [AccountingController::class, 'storeSubaccount'])->middleware('tenant.permission:manage_chart_of_accounts')->name('accounting.subaccounts.store');
+        Route::put('/accounting/subaccounts/{account}', [AccountingController::class, 'updateSubaccount'])->middleware('tenant.permission:manage_chart_of_accounts')->name('accounting.subaccounts.update');
+        Route::post('/accounting/journals', [AccountingController::class, 'storeJournal'])->middleware('tenant.permission:manage_accounting_journals')->name('accounting.journals.store');
+        Route::put('/accounting/journals/{journal}', [AccountingController::class, 'updateJournal'])->middleware('tenant.permission:manage_accounting_journals')->name('accounting.journals.update');
+        Route::post('/accounting/exercises/{exercise}/configure', [AccountingController::class, 'configureExercise'])->middleware('tenant.permission:manage_accounting_fiscal_years')->name('accounting.exercises.configure');
+        Route::post('/accounting/entries', [AccountingController::class, 'storeEntry'])->middleware('tenant.permission:create_accounting_entries')->name('accounting.entries.store');
+        Route::get('/accounting/entries/{entry}', [AccountingController::class, 'showEntry'])->middleware('tenant.permission:view_accounting_entries')->name('accounting.entries.show');
+        Route::post('/accounting/entries/{entry}/post', [AccountingController::class, 'post'])->middleware('tenant.permission:post_accounting_entries')->name('accounting.entries.post');
+        Route::post('/accounting/entries/{entry}/reverse', [AccountingController::class, 'reverse'])->middleware('tenant.permission:reverse_accounting_entries')->name('accounting.entries.reverse');
+        Route::post('/accounting/periods/{period}/lock', [AccountingController::class, 'lockPeriod'])->middleware('tenant.permission:lock_accounting_periods')->name('accounting.periods.lock');
+        Route::post('/accounting/periods/{period}/reopen', [AccountingController::class, 'reopenPeriod'])->middleware('tenant.permission:reopen_accounting_periods')->name('accounting.periods.reopen');
+        Route::post('/accounting/automation/rules', [AccountingAutomationController::class, 'storeRule'])->middleware('tenant.permission:manage_draft_posting_rules')->name('accounting.automation.rules.store');
+        Route::post('/accounting/automation/review-configuration', [AccountingAutomationController::class, 'reviewConfiguration'])->middleware('tenant.permission:review_posting_rules')->name('accounting.automation.review-configuration');
+        Route::post('/accounting/automation/rules/{rule}/review', [AccountingAutomationController::class, 'reviewRule'])->middleware('tenant.permission:review_posting_rules')->name('accounting.automation.rules.review');
+        Route::post('/accounting/automation/rules/{rule}/activate', [AccountingAutomationController::class, 'activateRule'])->middleware('tenant.permission:review_posting_rules')->name('accounting.automation.rules.activate');
+        Route::post('/accounting/automation/mappings', [AccountingAutomationController::class, 'storeMapping'])->middleware('tenant.permission:manage_account_mappings')->name('accounting.automation.mappings.store');
+        Route::post('/accounting/automation/mappings/{mapping}/review', [AccountingAutomationController::class, 'reviewMapping'])->middleware('tenant.permission:review_posting_rules')->name('accounting.automation.mappings.review');
+        Route::post('/accounting/automation/activate', [AccountingAutomationController::class, 'activate'])->middleware('tenant.permission:activate_accounting_automation')->name('accounting.automation.activate');
+        Route::post('/accounting/opening-balances', [AccountingAutomationController::class, 'storeOpening'])->middleware('tenant.permission:manage_opening_balance_drafts')->name('accounting.opening.store');
+        Route::post('/accounting/opening-balances/{batch}/review', [AccountingAutomationController::class, 'reviewOpening'])->middleware('tenant.permission:review_opening_balances')->name('accounting.opening.review');
+        Route::post('/accounting/opening-balances/{batch}/post', [AccountingAutomationController::class, 'postOpening'])->middleware('tenant.permission:post_opening_balances')->name('accounting.opening.post');
+        Route::get('/accounting/reports', [AccountingReportController::class, 'index'])->name('accounting.reports.index');
+        Route::get('/accounting/reports/export/{format}', [AccountingReportController::class, 'export'])->name('accounting.reports.export');
+        Route::get('/accounting/closing', [AccountingClosingController::class, 'index'])
+            ->middleware('tenant.permission:view_closing_readiness')->name('accounting.closing.index');
+        Route::post('/accounting/closing/configurations', [AccountingClosingController::class, 'storeConfiguration'])
+            ->middleware('tenant.permission:prepare_fiscal_year_closing')->name('accounting.closing.configurations.store');
+        Route::post('/accounting/closing/configurations/{configuration}/review', [AccountingClosingController::class, 'reviewConfiguration'])
+            ->middleware('tenant.permission:review_fiscal_year_closing')->name('accounting.closing.configurations.review');
+        Route::post('/accounting/closing/exercises/{exercise}/prepare', [AccountingClosingController::class, 'prepare'])
+            ->middleware('tenant.permission:prepare_fiscal_year_closing')->name('accounting.closing.prepare');
+        Route::post('/accounting/closing/packages/{package}/review', [AccountingClosingController::class, 'review'])
+            ->middleware('tenant.permission:review_fiscal_year_closing')->name('accounting.closing.review');
+        Route::post('/accounting/closing/packages/{package}/approve', [AccountingClosingController::class, 'approve'])
+            ->middleware('tenant.permission:approve_fiscal_year_closing')->name('accounting.closing.approve');
+        Route::post('/accounting/closing/packages/{package}/periods/{period}/close', [AccountingClosingController::class, 'closePeriod'])
+            ->middleware('tenant.permission:close_accounting_period')->name('accounting.closing.periods.close');
+        Route::post('/accounting/closing/packages/{package}/execute', [AccountingClosingController::class, 'execute'])
+            ->middleware('tenant.permission:execute_fiscal_year_closing')->name('accounting.closing.execute');
+        Route::post('/accounting/closing/packages/{package}/carry-forward', [AccountingClosingController::class, 'carryForward'])
+            ->middleware('tenant.permission:execute_carry_forward')->name('accounting.closing.carry-forward');
+        Route::post('/accounting/closing/packages/{package}/reopen', [AccountingClosingController::class, 'reopen'])
+            ->middleware('tenant.permission:reopen_accounting_periods')->name('accounting.closing.reopen');
+        Route::get('/accounting/closing/packages/{package}/export/{format}', [AccountingClosingController::class, 'export'])
+            ->middleware('tenant.permission:export_closing_evidence')->name('accounting.closing.export');
         Route::get('/my-finances', OwnerFinancePortalController::class)->name('owner-finance.index');
         Route::get('/my-finances/lots/{lot}/statement.pdf', [OwnerFinancePortalController::class, 'statement'])->name('owner-finance.statement');
         Route::get('/finance/receipts/{document}', [ReceiptController::class, 'download'])->name('receipts.download');
@@ -373,6 +460,26 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/governance/mandates', [GovernanceMandateController::class, 'store'])->middleware('tenant.permission:manage_governance_mandates')->name('governance.mandates.store');
         Route::post('/governance/mandates/{mandate}/transition', [GovernanceMandateController::class, 'transition'])->middleware('tenant.permission:manage_governance_mandates')->name('governance.mandates.transition');
         Route::get('/governance/reports', [GovernanceController::class, 'dashboard'])->middleware('tenant.permission:view_governance_reports')->name('governance.reports');
+        Route::get('/governance/rules', [GovernanceRuleController::class, 'index'])->middleware('tenant.permission:manage_governance_rules')->name('governance.rules.index');
+        Route::post('/governance/rule-sources', [GovernanceRuleController::class, 'storeSource'])->middleware('tenant.permission:manage_governance_rules')->name('governance.rule-sources.store');
+        Route::post('/governance/rule-sources/{source}/verify', [GovernanceRuleController::class, 'verifySource'])->middleware('tenant.permission:verify_governance_sources')->name('governance.rule-sources.verify');
+        Route::post('/governance/rule-versions', [GovernanceRuleController::class, 'storeVersion'])->middleware('tenant.permission:manage_governance_rules')->name('governance.rule-versions.store');
+        Route::post('/governance/rule-versions/{version}/review', [GovernanceRuleController::class, 'review'])->middleware('tenant.permission:approve_governance_rules')->name('governance.rule-versions.review');
+        Route::post('/governance/rule-versions/{version}/approve', [GovernanceRuleController::class, 'approve'])->middleware('tenant.permission:approve_governance_rules')->name('governance.rule-versions.approve');
+        Route::post('/governance/rule-versions/{version}/activate', [GovernanceRuleController::class, 'activate'])->middleware('tenant.permission:activate_governance_rules')->name('governance.rule-versions.activate');
+        Route::post('/governance/rule-versions/{version}/amend', [GovernanceRuleController::class, 'amend'])->middleware('tenant.permission:manage_governance_rules')->name('governance.rule-versions.amend');
+        Route::get('/governance/diagnostics', [PhaseSevenGovernanceController::class, 'diagnostics'])->middleware('tenant.permission:view_governance_technical_diagnostics')->name('governance.diagnostics');
+        Route::get('/governance/exports/{type}/{format}', [GovernanceExportController::class, 'export'])->middleware('tenant.permission:export_governance_registers')->name('governance.exports');
+        Route::post('/governance/assemblies/{assembly}/eligibility', [PhaseSevenGovernanceController::class, 'generateEligibility'])->middleware('tenant.permission:manage_eligibility_snapshots')->name('governance.eligibility.generate');
+        Route::post('/governance/eligibility/{snapshot}/review', [PhaseSevenGovernanceController::class, 'reviewEligibility'])->middleware('tenant.permission:review_assembly_preparation')->name('governance.eligibility.review');
+        Route::post('/governance/eligibility-interests/{interest}/override', [PhaseSevenGovernanceController::class, 'overrideEligibility'])->middleware('tenant.permission:override_eligibility')->name('governance.eligibility.override');
+        Route::post('/governance/assemblies/{assembly}/quorum/preview', [PhaseSevenGovernanceController::class, 'previewQuorum'])->middleware('tenant.permission:preview_quorum')->name('governance.quorum.preview');
+        Route::post('/governance/quorum/{snapshot}/confirm', [PhaseSevenGovernanceController::class, 'confirmQuorum'])->middleware('tenant.permission:confirm_quorum')->name('governance.quorum.confirm');
+        Route::post('/governance/resolutions/{resolution}/open-voting', [PhaseSevenGovernanceController::class, 'openVoting'])->middleware('tenant.permission:manage_resolutions')->name('governance.voting.open');
+        Route::post('/governance/resolutions/{resolution}/secret-result', [PhaseSevenGovernanceController::class, 'closeSecretBallot'])->middleware('tenant.permission:close_voting')->name('governance.voting.secret.close');
+        Route::post('/governance/resolutions/{resolution}/challenge', [PhaseSevenGovernanceController::class, 'challenge'])->middleware('tenant.permission:challenge_suspend_resolutions')->name('governance.resolutions.challenge');
+        Route::post('/governance/minute-versions/{version}/approval', [PhaseSevenGovernanceController::class, 'approveMinutes'])->middleware('tenant.permission:approve_minutes')->name('governance.minutes.approval');
+        Route::post('/governance/assemblies/{assembly}/finalize', [PhaseSevenGovernanceController::class, 'finalizeAssembly'])->middleware('tenant.permission:finalize_assemblies')->name('governance.assembly.finalize');
 
         Route::get('/resident/governance', [OwnerGovernanceController::class, 'index'])->name('owner-governance.index');
         Route::get('/resident/governance/convocations/{convocation}/download', [OwnerGovernanceController::class, 'convocation'])->name('owner-governance.convocations.download');

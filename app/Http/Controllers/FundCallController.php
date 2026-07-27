@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FinancialExercise;
 use App\Models\FundCall;
 use App\Rules\ValidMoney;
+use App\Services\AccountingSourceStatusService;
 use App\Services\FundCallWorkflow;
 use App\Support\ArabicPdf;
 use App\Support\Money;
@@ -57,13 +58,19 @@ class FundCallController extends Controller
         return redirect()->route('fund-calls.show', $call)->with('success', __('Brouillon d’appel créé.'));
     }
 
-    public function show(FundCall $fundCall, TenantContext $context, FundCallWorkflow $workflow)
+    public function show(FundCall $fundCall, TenantContext $context, FundCallWorkflow $workflow, AccountingSourceStatusService $accounting)
     {
         $this->tenant($fundCall, $context);
         $fundCall->load(['exercise', 'lines.category', 'charges.lot', 'charges.billedContact']);
         $preview = $fundCall->status === 'draft' ? $workflow->preview($fundCall) : [];
 
-        return Inertia::render('Finance/FundCalls/Show', ['call' => $fundCall, 'preview' => $preview]);
+        return Inertia::render('Finance/FundCalls/Show', [
+            'call' => $fundCall,
+            'preview' => $preview,
+            'accountingPosting' => request()->user()->canInOrganization('view_source_postings', $context->organization())
+                ? $accounting->get('fund_call', $fundCall->id, $fundCall->organization_id, $fundCall->residence_id)
+                : null,
+        ]);
     }
 
     public function edit(FundCall $fundCall, TenantContext $context)

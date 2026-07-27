@@ -12,6 +12,7 @@ use App\Policies\AssemblyPolicy;
 use App\Policies\MaintenanceRequestPolicy;
 use App\Policies\MaintenanceWorkOrderPolicy;
 use App\Policies\ResidencePolicy;
+use App\Services\AccountingMutationGuard;
 use App\Services\DompdfReceiptRenderer;
 use App\Services\FinancialDocumentMutationGuard;
 use Illuminate\Notifications\Events\NotificationFailed;
@@ -31,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(ReceiptPdfRenderer::class, DompdfReceiptRenderer::class);
         $this->app->singleton(FinancialDocumentMutationGuard::class);
+        $this->app->singleton(AccountingMutationGuard::class);
     }
 
     /**

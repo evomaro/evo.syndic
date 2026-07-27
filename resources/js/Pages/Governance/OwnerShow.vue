@@ -8,6 +8,30 @@ defineProps<{
     proxyOnly: boolean;
 }>();
 const ar = usePage<any>().props.locale === "ar";
+const statusLabels: Record<string, { fr: string; ar: string }> = {
+    draft: { fr: "Brouillon", ar: "مسودة" },
+    preparing: { fr: "En préparation", ar: "قيد الإعداد" },
+    convocation_issued: { fr: "Convocation émise", ar: "تم إصدار الدعوة" },
+    scheduled: { fr: "Programmée", ar: "مبرمجة" },
+    in_session: { fr: "En séance", ar: "الجلسة منعقدة" },
+    deliberations_completed: {
+        fr: "Délibérations terminées",
+        ar: "انتهاء المداولات",
+    },
+    minutes_prepared: { fr: "Procès-verbal préparé", ar: "تم إعداد المحضر" },
+    minutes_signed: { fr: "Procès-verbal signé", ar: "تم توقيع المحضر" },
+    decisions_notified: { fr: "Décisions notifiées", ar: "تم تبليغ القرارات" },
+    closed: { fr: "Clôturée", ar: "مختتمة" },
+    finalized: { fr: "Finalisée", ar: "مكتملة نهائياً" },
+    cancelled: { fr: "Annulée", ar: "ملغاة" },
+    postponed: { fr: "Reportée", ar: "مؤجلة" },
+    adjourned_no_quorum: {
+        fr: "Ajournée faute de quorum",
+        ar: "مؤجلة لعدم اكتمال النصاب",
+    },
+};
+const statusLabel = (status: string) =>
+    statusLabels[status]?.[ar ? "ar" : "fr"] ?? status;
 const q = useForm({ question_fr: "", question_ar: "" });
 const proxy = useForm<{ representative_email: string; file: File | null }>({
     representative_email: "",
@@ -29,7 +53,7 @@ const proxyFile = (event: Event) =>
                 <section class="min-w-0 rounded-2xl border bg-white p-5">
                     <span
                         class="rounded-full bg-teal-100 px-3 py-1 text-sm font-bold"
-                        >{{ assembly.status }}</span
+                        >{{ statusLabel(assembly.status) }}</span
                     >
                     <h2 class="mt-4 text-xl font-black break-words">
                         {{ assembly.meeting_date }} · {{ assembly.starts_at }}

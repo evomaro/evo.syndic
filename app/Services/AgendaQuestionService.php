@@ -21,7 +21,7 @@ class AgendaQuestionService
             throw ValidationException::withMessages(['question' => __('Le délai de soumission est dépassé.')]);
         }
 
-return AgendaQuestionSubmission::create(['organization_id' => $assembly->organization_id, 'residence_id' => $assembly->residence_id, 'assembly_id' => $assembly->id, 'electorate_id' => $electorate->id, 'submitted_by' => $user->id, 'question_fr' => $fr, 'question_ar' => $ar, 'submission_deadline_at' => $deadline]);
+        return AgendaQuestionSubmission::create(['organization_id' => $assembly->organization_id, 'residence_id' => $assembly->residence_id, 'assembly_id' => $assembly->id, 'electorate_id' => $electorate->id, 'submitted_by' => $user->id, 'question_fr' => $fr, 'question_ar' => $ar, 'submission_deadline_at' => $deadline]);
     }
 
     public function decide(AgendaQuestionSubmission $question, string $status, User $actor, ?string $reason): AgendaQuestionSubmission

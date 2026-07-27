@@ -11,6 +11,42 @@ const props = defineProps<{
 }>();
 const ar = usePage<any>().props.locale === "ar";
 const a = props.assembly;
+const statusLabels: Record<string, { fr: string; ar: string }> = {
+    draft: { fr: "Brouillon", ar: "مسودة" },
+    preparing: { fr: "En préparation", ar: "قيد الإعداد" },
+    convocation_issued: { fr: "Convocation émise", ar: "تم إصدار الدعوة" },
+    scheduled: { fr: "Programmée", ar: "مبرمجة" },
+    in_session: { fr: "En séance", ar: "الجلسة منعقدة" },
+    deliberations_completed: {
+        fr: "Délibérations terminées",
+        ar: "انتهاء المداولات",
+    },
+    minutes_prepared: { fr: "Procès-verbal préparé", ar: "تم إعداد المحضر" },
+    minutes_signed: { fr: "Procès-verbal signé", ar: "تم توقيع المحضر" },
+    decisions_notified: { fr: "Décisions notifiées", ar: "تم تبليغ القرارات" },
+    closed: { fr: "Clôturée", ar: "مختتمة" },
+    finalized: { fr: "Finalisée", ar: "مكتملة نهائياً" },
+    cancelled: { fr: "Annulée", ar: "ملغاة" },
+    postponed: { fr: "Reportée", ar: "مؤجلة" },
+    adjourned_no_quorum: {
+        fr: "Ajournée faute de quorum",
+        ar: "مؤجلة لعدم اكتمال النصاب",
+    },
+    authorized: { fr: "Autorisée", ar: "مصرح بها" },
+    voting_open: { fr: "Vote ouvert", ar: "التصويت مفتوح" },
+    adopted: { fr: "Adoptée", ar: "معتمدة" },
+    rejected: { fr: "Rejetée", ar: "مرفوضة" },
+};
+const statusLabel = (status: string) =>
+    statusLabels[status]?.[ar ? "ar" : "fr"] ?? status;
+const legalStatusLabel = (status: string) =>
+    status === "reviewed_configuration"
+        ? ar
+            ? "إعداد تقني مراجع — دون اعتماد قانوني"
+            : "Configuration technique revue — sans certification juridique"
+        : ar
+          ? "الصلاحية القانونية غير متحققة"
+          : "Validité juridique non vérifiée";
 const post = (name: string, data: any = {}) =>
     router.post(route(name, a.id), data, { preserveScroll: true });
 const agenda = useForm({
@@ -110,7 +146,7 @@ const execution = (r: any) => {
         <div class="mb-5 flex min-w-0 flex-wrap items-center gap-2">
             <span
                 class="rounded-full bg-slate-900 px-3 py-1 text-sm font-bold text-white"
-                >{{ a.status }}</span
+                >{{ statusLabel(a.status) }}</span
             ><span
                 class="rounded-full bg-teal-100 px-3 py-1 text-sm font-bold"
                 >{{
@@ -190,7 +226,15 @@ const execution = (r: any) => {
                         >
                             <b>{{ i.resolution.code }}</b> ·
                             {{ i.resolution.rule_version?.identifier }} ·
-                            {{ i.resolution.status }}
+                            {{ statusLabel(i.resolution.status) }}
+                            <p class="mt-1 font-semibold text-amber-800">
+                                {{
+                                    legalStatusLabel(
+                                        i.resolution.legal_validity_status ||
+                                            a.legal_verification_status,
+                                    )
+                                }}
+                            </p>
                         </div>
                     </div>
                     <form
@@ -413,7 +457,7 @@ const execution = (r: any) => {
                         class="mt-4 rounded-xl border p-4"
                     >
                         <div class="flex flex-wrap justify-between gap-2">
-                            <b>{{ r.code }} · {{ r.status }}</b
+                            <b>{{ r.code }} · {{ statusLabel(r.status) }}</b
                             ><button
                                 v-if="r.status === 'authorized'"
                                 @click="
@@ -431,6 +475,14 @@ const execution = (r: any) => {
                                 {{ ar ? "إقفال النتيجة" : "Finaliser" }}
                             </button>
                         </div>
+                        <p class="mt-2 text-sm font-semibold text-amber-800">
+                            {{
+                                legalStatusLabel(
+                                    r.legal_validity_status ||
+                                        a.legal_verification_status,
+                                )
+                            }}
+                        </p>
                         <div
                             v-if="r.status === 'authorized'"
                             class="mt-3 space-y-2"

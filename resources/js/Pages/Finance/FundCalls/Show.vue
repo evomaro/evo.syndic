@@ -3,8 +3,9 @@ import { Link, useForm } from "@inertiajs/vue3";
 import { ref } from "vue";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import FinanceNav from "@/Components/FinanceNav.vue";
+import AccountingPostingStatus from "@/Components/AccountingPostingStatus.vue";
 import { useI18n } from "@/i18n";
-const p = defineProps<{ call: any; preview: any[] }>();
+const p = defineProps<{ call: any; preview: any[]; accountingPosting: any }>();
 const { t, locale } = useI18n();
 const reason = ref("");
 const cancelForm = useForm({ reason: "" });
@@ -80,6 +81,7 @@ const cancelCall = () => {
                 </div>
             </section>
             <aside class="space-y-3">
+                <AccountingPostingStatus :posting="accountingPosting" />
                 <div class="panel p-5">
                     <p class="text-sm text-slate-500">
                         {{ t("amountCalled") }}

@@ -6,6 +6,7 @@ use App\Http\Requests\Expenses\SupplierSettlementRequest;
 use App\Models\FinancialExercise;
 use App\Models\SupplierSettlement;
 use App\Queries\SupplierSettlementQuery;
+use App\Services\AccountingSourceStatusService;
 use App\Services\SupplierSettlementWorkflow;
 use App\Services\VoucherService;
 use App\Support\TenantContext;
@@ -25,12 +26,17 @@ class SupplierSettlementController extends Controller
         return Inertia::render('SupplierSettlements/Form', ['exercises' => FinancialExercise::query()->where('residence_id', $context->residence()->id)->where('status', 'open')->get(['id', 'name']), 'accounts' => $context->residence()->financialAccounts()->where('active', true)->get(['id', 'name'])]);
     }
 
-    public function show(SupplierSettlement $settlement, TenantContext $context)
+    public function show(SupplierSettlement $settlement, TenantContext $context, AccountingSourceStatusService $accounting)
     {
         $this->tenant($settlement, $context);
         $this->authorize('view', $settlement);
 
-        return Inertia::render('SupplierSettlements/Show', ['settlement' => $settlement->load(['supplier', 'account', 'allocations.invoice', 'allocations.line', 'documents', 'movements'])]);
+        return Inertia::render('SupplierSettlements/Show', [
+            'settlement' => $settlement->load(['supplier', 'account', 'allocations.invoice', 'allocations.line', 'documents', 'movements']),
+            'accountingPosting' => request()->user()->canInOrganization('view_source_postings', $context->organization())
+                ? $accounting->get('supplier_settlement', $settlement->id, $settlement->organization_id, $settlement->residence_id)
+                : null,
+        ]);
     }
 
     public function store(SupplierSettlementRequest $request, TenantContext $context)

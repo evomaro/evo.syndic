@@ -13,9 +13,11 @@ class GovernanceNotificationService
 {
     public function userEvent(User $user, Assembly $assembly, string $eventType, string $eventKey, array $copy, string $url): int
     {
-        if (! $user->belongsToOrganization($assembly->organization_id)) {
+        if (! $user->hasVerifiedEmail() || ! $user->belongsToOrganization($assembly->organization_id)) {
             return 0;
-        }$pref = NotificationPreference::where('user_id', $user->id)->where('organization_id', $assembly->organization_id)->first();
+        }
+
+        $pref = NotificationPreference::where('user_id', $user->id)->where('organization_id', $assembly->organization_id)->first();
         if (in_array($eventType, $pref?->muted_events ?? [], true)) {
             return 0;
         }$sent = 0;
@@ -27,14 +29,18 @@ class GovernanceNotificationService
             $sent++;
         }
 
-return $sent;
+        return $sent;
     }
 
     public function electorateEvent(AssemblyElectorate $electorate, string $eventType, string $eventKey, array $copy, string $url): int
     {
         $sent = 0;
         $assembly = $electorate->assembly;
-        $users = User::query()->whereHas('contacts', fn ($q) => $q->where('contacts.id', $electorate->contact_id)->where('contact_user.organization_id', $electorate->organization_id)->whereNull('contact_user.revoked_at'))->whereHas('organizations', fn ($q) => $q->where('organizations.id', $electorate->organization_id))->get();
+        $users = User::query()
+            ->whereNotNull('email_verified_at')
+            ->whereHas('contacts', fn ($q) => $q->where('contacts.id', $electorate->contact_id)->where('contact_user.organization_id', $electorate->organization_id)->whereNull('contact_user.revoked_at'))
+            ->whereHas('organizations', fn ($q) => $q->where('organizations.id', $electorate->organization_id))
+            ->get();
         foreach ($users as $user) {
             $stillOwner = DB::table('lot_ownerships')->join('lots', 'lots.id', '=', 'lot_ownerships.lot_id')->join('contact_user', 'contact_user.contact_id', '=', 'lot_ownerships.contact_id')->where('contact_user.user_id', $user->id)->whereNull('contact_user.revoked_at')->where('lots.residence_id', $electorate->residence_id)->whereDate('lot_ownerships.starts_on', '<=', today())->where(fn ($q) => $q->whereNull('lot_ownerships.ends_on')->orWhereDate('lot_ownerships.ends_on', '>=', today()))->exists();
             if (! $stillOwner) {
@@ -53,6 +59,6 @@ return $sent;
             }
         }
 
-return $sent;
+        return $sent;
     }
 }

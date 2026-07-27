@@ -3,11 +3,13 @@ import { Link, useForm } from "@inertiajs/vue3";
 import { ref } from "vue";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import FinanceNav from "@/Components/FinanceNav.vue";
+import AccountingPostingStatus from "@/Components/AccountingPostingStatus.vue";
 import { useI18n } from "@/i18n";
 const p = defineProps<{
     payment: any;
     availableCharges: any[];
     contacts: any[];
+    accountingPosting: any;
 }>();
 const { t, locale } = useI18n();
 const reason = ref("");
@@ -63,6 +65,10 @@ const identifyPayer = () =>
         ><FinanceNav />
         <div class="grid gap-5 xl:grid-cols-[1fr_340px]">
             <section class="panel">
+                <AccountingPostingStatus
+                    :posting="accountingPosting"
+                    class="m-4"
+                />
                 <div class="panel-head">
                     <div>
                         <b>{{ money(payment.amount_cents) }}</b>

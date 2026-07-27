@@ -15,6 +15,7 @@ class SupplierInvoiceWorkflow
         private OrganizationDocumentNumberService $numbers,
         private SupplierPayableService $payables,
         private ExpenseResidenceAccessService $access,
+        private AutomatedAccountingPostingService $accounting,
     ) {}
 
     public function validate(SupplierInvoice $invoice, User $actor): SupplierInvoice
@@ -25,6 +26,8 @@ class SupplierInvoiceWorkflow
             $locked->load(['lines.residence', 'lines.exercise', 'lines.category']);
             $invoice->setRelation('lines', $locked->lines);
             if ($invoice->status === 'validated') {
+                $this->accounting->postSupplierInvoice($invoice->fresh('lines'), $actor);
+
                 return $invoice;
             }
             if ($invoice->status !== 'draft' || $invoice->lines->isEmpty()) {
@@ -82,10 +85,11 @@ class SupplierInvoiceWorkflow
                 $invoiced = (int) SupplierInvoice::query()->where('expense_commitment_id', $invoice->commitment->id)->whereIn('status', ['validated', 'partial', 'paid'])->sum('total_cents');
                 $invoice->commitment->update(['status' => $invoiced >= $invoice->commitment->amount_cents ? 'fully_invoiced' : 'partially_invoiced']);
             }
+            $this->accounting->postSupplierInvoice($invoice->fresh('lines'), $actor);
             activity()->performedOn($invoice)->causedBy($actor)->withProperties(['organization_id' => $invoice->organization_id, 'residence_id' => $invoice->primary_residence_id, 'number' => $number, 'total_cents' => $total])->log('supplier_invoice.validated');
 
             return $invoice->fresh(['lines', 'attachments']);
-        });
+        }, 5);
     }
 
     public function cancel(SupplierInvoice $invoice, User $actor, string $reason): SupplierInvoice
@@ -100,6 +104,7 @@ class SupplierInvoiceWorkflow
             FinancialExercise::query()->whereIn('id', $invoice->lines()->pluck('financial_exercise_id'))->where('status', 'closed')->exists()
                 && throw ValidationException::withMessages(['exercise' => __('L’exercice financier est clôturé.')]);
             $invoice->update(['status' => 'cancelled', 'cancelled_at' => now(), 'cancelled_by' => $actor->id, 'cancellation_reason' => $reason]);
+            $this->accounting->reverse('supplier_invoice', $invoice->id, $actor, $reason);
             if ($invoice->expense_commitment_id) {
                 $commitment = $invoice->commitment()->lockForUpdate()->first();
                 $invoiced = (int) SupplierInvoice::query()->where('expense_commitment_id', $commitment->id)->whereIn('status', ['validated', 'partial', 'paid'])->sum('total_cents');
@@ -108,6 +113,6 @@ class SupplierInvoiceWorkflow
             activity()->performedOn($invoice)->causedBy($actor)->withProperties(['organization_id' => $invoice->organization_id, 'residence_id' => $invoice->primary_residence_id, 'reason' => $reason])->log('supplier_invoice.cancelled');
 
             return $invoice;
-        });
+        }, 5);
     }
 }

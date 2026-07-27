@@ -4,10 +4,15 @@ use App\Models\FundCallSchedule;
 use App\Models\User;
 use App\Services\AnnouncementService;
 use App\Services\BudgetThresholdNotificationService;
+use App\Services\ComplianceAuditService;
+use App\Services\ComplianceOccurrenceService;
+use App\Services\ComplianceReminderService;
 use App\Services\ContractExpirationNotificationService;
 use App\Services\ExpenseAuditService;
 use App\Services\FundCallScheduleService;
 use App\Services\GovernanceDeadlineService;
+use App\Services\GovernanceDeliveryScheduler;
+use App\Services\GovernanceIntegrityAuditService;
 use App\Services\MaintenanceSlaService;
 use App\Services\OverdueSupplierInvoiceNotificationService;
 use App\Services\PreventiveMaintenanceScheduler;
@@ -125,10 +130,104 @@ Artisan::command('evosyndic:evaluate-maintenance-sla {--dry-run} {--apply}', fun
 Schedule::command('evosyndic:generate-preventive-maintenance --apply')->dailyAt('01:30')->withoutOverlapping();
 Schedule::command('evosyndic:evaluate-maintenance-sla --apply')->everyFifteenMinutes()->withoutOverlapping();
 
-Artisan::command('evosyndic:evaluate-governance-deadlines {--date=} {--dry-run} {--apply}', function (GovernanceDeadlineService $service) {
+Artisan::command('evosyndic:evaluate-governance-deadlines {--date=} {--limit=500} {--dry-run} {--apply}', function (GovernanceDeadlineService $service) {
     $date = $this->option('date') ? CarbonImmutable::parse($this->option('date')) : null;
     $apply = $this->option('apply') && ! $this->option('dry-run');
-    $this->line(json_encode($service->evaluate($date, $apply), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    $this->line(json_encode($service->evaluate($date, $apply, (int) $this->option('limit')), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 })->purpose('Notify upcoming assemblies and governance execution or mandate deadlines');
 
 Schedule::command('evosyndic:evaluate-governance-deadlines --apply')->dailyAt('08:15')->withoutOverlapping();
+
+Artisan::command('governance:dispatch-convocation-availability {actor} {--date=} {--limit=200} {--dry-run} {--apply}', function (GovernanceDeliveryScheduler $service) {
+    $actor = User::findOrFail((int) $this->argument('actor'));
+    $date = CarbonImmutable::parse($this->option('date') ?: now()->toDateString());
+    $apply = (bool) $this->option('apply') && ! $this->option('dry-run');
+    $this->line(json_encode($service->dispatch($date, $actor, $apply, (int) $this->option('limit')), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+    return 0;
+})->purpose('Queue bounded idempotent convocation-availability notices without changing legal delivery status');
+
+foreach (['assemblies', 'eligibility', 'votes', 'resolutions', 'evidence'] as $governanceAuditKind) {
+    Artisan::command("governance:audit-{$governanceAuditKind} {--organization=} {--residence=} {--assembly=} {--rule-version=} {--resolution=} {--fiscal-year=} {--status=} {--json}", function (GovernanceIntegrityAuditService $service) use ($governanceAuditKind) {
+        $filters = collect(['organization', 'residence', 'assembly', 'rule-version', 'resolution', 'fiscal-year', 'status'])
+            ->mapWithKeys(fn ($key) => [$key => $this->option($key)])
+            ->filter(fn ($value) => $value !== null && $value !== '')
+            ->all();
+        $report = $service->{$governanceAuditKind}($filters);
+        $this->line(json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
+        return $report['ok'] ? 0 : 1;
+    })->purpose("Read-only {$governanceAuditKind} governance integrity audit");
+}
+
+foreach (['templates', 'obligations', 'reminders', 'evidence'] as $complianceAuditKind) {
+    Artisan::command("compliance:audit-{$complianceAuditKind} {--organization=} {--residence=} {--template=} {--fiscal-year=} {--obligation=} {--status=} {--json}", function (ComplianceAuditService $service) use ($complianceAuditKind) {
+        $filters = collect(['organization', 'residence', 'template', 'fiscal-year', 'obligation', 'status'])
+            ->mapWithKeys(fn ($key) => [$key => $this->option($key)])->filter()->all();
+        $report = $service->{$complianceAuditKind}($filters);
+        $this->line(json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+        return $report['ok'] ? 0 : 1;
+    })->purpose("Read-only {$complianceAuditKind} compliance integrity audit");
+}
+
+Artisan::command('compliance:refresh-deadlines {--limit=500} {--dry-run} {--apply}', function (ComplianceOccurrenceService $service) {
+    if (! $this->option('apply') || $this->option('dry-run')) {
+        $this->info('Dry run only; no deadline state changed.');
+
+        return 0;
+    }
+    $this->info($service->refreshDeadlineStates((int) $this->option('limit')).' deadline classification(s) refreshed.');
+
+    return 0;
+})->purpose('Refresh derived compliance deadline classifications in bounded batches');
+
+Artisan::command('compliance:generate-reminders {--date=} {--limit=500} {--dry-run} {--apply}', function (ComplianceReminderService $service) {
+    if (! $this->option('apply') || $this->option('dry-run')) {
+        $this->info('Dry run only; no reminder generated.');
+
+        return 0;
+    }
+    $date = CarbonImmutable::parse($this->option('date') ?: now()->toDateString());
+    $this->line(json_encode($service->generate($date, (int) $this->option('limit')), JSON_UNESCAPED_UNICODE));
+
+    return 0;
+})->purpose('Generate retry-safe compliance reminders in bounded batches');
+
+Artisan::command('compliance:dispatch-reminders {--limit=200} {--dry-run} {--apply}', function (ComplianceReminderService $service) {
+    if (! $this->option('apply') || $this->option('dry-run')) {
+        $this->info('Dry run only; no reminder dispatched.');
+
+        return 0;
+    }
+    $this->line(json_encode($service->dispatch((int) $this->option('limit')), JSON_UNESCAPED_UNICODE));
+
+    return 0;
+})->purpose('Dispatch pending compliance reminders after revalidating scope');
+
+Schedule::command('compliance:refresh-deadlines --apply')->dailyAt('00:20')->withoutOverlapping();
+Schedule::command('compliance:generate-reminders --apply')->dailyAt('07:00')->withoutOverlapping();
+Schedule::command('compliance:dispatch-reminders --apply')->everyFiveMinutes()->withoutOverlapping();
+
+Artisan::command('compliance:generate-occurrences {--from=} {--to=} {--limit=500} {--dry-run} {--apply}', function (ComplianceOccurrenceService $service) {
+    $from = CarbonImmutable::parse($this->option('from') ?: now()->toDateString());
+    $to = CarbonImmutable::parse($this->option('to') ?: $from->addDays(90)->toDateString());
+    $apply = (bool) $this->option('apply') && ! $this->option('dry-run');
+    $this->line(json_encode($service->generateHorizon($from, $to, $apply, (int) $this->option('limit')), JSON_UNESCAPED_UNICODE));
+
+    return 0;
+})->purpose('Preview or generate bounded retry-safe compliance occurrences');
+
+Artisan::command('compliance:generate-escalations {--date=} {--limit=500} {--dry-run} {--apply}', function (ComplianceReminderService $service) {
+    if (! $this->option('apply') || $this->option('dry-run')) {
+        $this->info('Dry run only; no escalation generated.');
+
+        return 0;
+    }
+    $this->line(json_encode($service->generateEscalations(CarbonImmutable::parse($this->option('date') ?: now()->toDateString()), (int) $this->option('limit')), JSON_UNESCAPED_UNICODE));
+
+    return 0;
+})->purpose('Generate bounded retry-safe compliance escalations');
+
+Schedule::command('compliance:generate-occurrences --apply')->dailyAt('00:10')->withoutOverlapping();
+Schedule::command('compliance:generate-escalations --apply')->dailyAt('07:10')->withoutOverlapping();

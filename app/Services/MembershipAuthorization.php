@@ -16,7 +16,12 @@ class MembershipAuthorization
         if ($pivot->role === 'owner') {
             return config('evosyndic.permissions');
         }
-        $defaults = config("evosyndic.roles.{$pivot->role}", []);
+        $defaults = [
+            ...config("evosyndic.roles.{$pivot->role}", []),
+            ...config("evosyndic.accounting_roles.{$pivot->role}", []),
+            ...config("evosyndic.compliance_roles.{$pivot->role}", []),
+            ...config("evosyndic.governance_roles.{$pivot->role}", []),
+        ];
         $explicit = is_array($pivot->permissions) ? $pivot->permissions : json_decode($pivot->permissions ?: '[]', true);
 
         return array_values(array_intersect(config('evosyndic.permissions'), array_unique([...$defaults, ...$explicit])));

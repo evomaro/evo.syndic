@@ -61,7 +61,7 @@ class GovernanceDocumentController extends Controller
             abort(404);
         }
 
-return $s->download($version, $r->user(), $staff);
+        return $s->download($version, $r->user(), $staff);
     }
 
     public function convocation(Request $r, Convocation $convocation, TenantContext $c)
@@ -82,8 +82,8 @@ return $s->download($version, $r->user(), $staff);
         return $s->download($version);
     }
 
-    private function scope(Assembly $a,TenantContext $c): void
+    private function scope(Assembly $a, TenantContext $c): void
     {
-        abort_unless($a->organization_id === $c->organization()->id && $a->residence_id === $c->residence()->id,404);
+        abort_unless($a->organization_id === $c->organization()->id && $a->residence_id === $c->residence()->id, 404);
     }
 }

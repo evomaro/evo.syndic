@@ -11,6 +11,13 @@ use App\Models\AssemblyElectorate;
 use App\Models\AssemblyMinutes;
 use App\Models\AssemblyProxy;
 use App\Models\Building;
+use App\Models\ComplianceApplicabilityDecision;
+use App\Models\ComplianceAuthority;
+use App\Models\ComplianceEvidence;
+use App\Models\ComplianceObligation;
+use App\Models\ComplianceSource;
+use App\Models\ComplianceTemplate;
+use App\Models\ComplianceTemplateVersion;
 use App\Models\Contact;
 use App\Models\Entrance;
 use App\Models\Floor;
@@ -70,6 +77,13 @@ class ActivityScope
             GovernanceMandate::class => GovernanceMandate::where('organization_id', $organization->id)->pluck('id'),
             AgendaQuestionSubmission::class => AgendaQuestionSubmission::where('organization_id', $organization->id)->pluck('id'),
             ResolutionExecutionAction::class => ResolutionExecutionAction::where('organization_id', $organization->id)->pluck('id'),
+            ComplianceAuthority::class => ComplianceAuthority::where('organization_id', $organization->id)->pluck('id'),
+            ComplianceSource::class => ComplianceSource::where('organization_id', $organization->id)->pluck('id'),
+            ComplianceTemplate::class => ComplianceTemplate::where('organization_id', $organization->id)->pluck('id'),
+            ComplianceTemplateVersion::class => ComplianceTemplateVersion::whereHas('template', fn ($q) => $q->where('organization_id', $organization->id))->pluck('id'),
+            ComplianceApplicabilityDecision::class => ComplianceApplicabilityDecision::where('organization_id', $organization->id)->pluck('id'),
+            ComplianceObligation::class => ComplianceObligation::where('organization_id', $organization->id)->pluck('id'),
+            ComplianceEvidence::class => ComplianceEvidence::where('organization_id', $organization->id)->pluck('id'),
         ];
 
         return $query->where(function (Builder $outer) use ($subjects) {

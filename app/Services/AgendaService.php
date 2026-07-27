@@ -45,6 +45,7 @@ class AgendaService
                     $item->resolution->update(['status' => 'authorized', 'rule_snapshotted_at' => now('UTC')]);
                 }
             }
+            app(AgendaVersionService::class)->freeze($assembly->fresh(), $actor);
             activity()->performedOn($assembly)->causedBy($actor)->withProperties(['organization_id' => $assembly->organization_id, 'residence_id' => $assembly->residence_id, 'items' => $assembly->agendaItems->count()])->log('governance.agenda_frozen');
 
             return $assembly->agendaItems->count();
@@ -60,6 +61,7 @@ class AgendaService
             }
             $item->update(['status' => 'removed', 'removed_at' => now('UTC'), 'removed_by' => $actor->id, 'amendment_reason' => trim($reason)]);
             $replacement = $item->assembly->agendaItems()->create($item->only(['display_order', 'title_fr', 'title_ar', 'explanation_fr', 'explanation_ar', 'proposed_text_fr', 'proposed_text_ar', 'category', 'financial_impact_cents', 'resident_visible']) + collect($data)->only(['title_fr', 'title_ar', 'explanation_fr', 'explanation_ar', 'proposed_text_fr', 'proposed_text_ar'])->all() + ['parent_item_id' => $item->id, 'version' => $item->version + 1, 'status' => 'draft', 'amendment_reason' => trim($reason)]);
+            app(AgendaVersionService::class)->freeze($item->assembly->fresh(), $actor, trim($reason));
             activity()->performedOn($replacement)->causedBy($actor)->withProperties(['organization_id' => $item->assembly->organization_id, 'residence_id' => $item->assembly->residence_id, 'replaces_item_id' => $item->id, 'reason' => trim($reason)])->log('governance.agenda_amended');
 
             return $replacement;

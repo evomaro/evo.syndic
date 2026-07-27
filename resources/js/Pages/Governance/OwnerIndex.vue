@@ -3,6 +3,30 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Link, usePage } from "@inertiajs/vue3";
 defineProps<{ assemblies: any }>();
 const ar = usePage<any>().props.locale === "ar";
+const statusLabels: Record<string, { fr: string; ar: string }> = {
+    draft: { fr: "Brouillon", ar: "مسودة" },
+    preparing: { fr: "En préparation", ar: "قيد الإعداد" },
+    convocation_issued: { fr: "Convocation émise", ar: "تم إصدار الدعوة" },
+    scheduled: { fr: "Programmée", ar: "مبرمجة" },
+    in_session: { fr: "En séance", ar: "الجلسة منعقدة" },
+    deliberations_completed: {
+        fr: "Délibérations terminées",
+        ar: "انتهاء المداولات",
+    },
+    minutes_prepared: { fr: "Procès-verbal préparé", ar: "تم إعداد المحضر" },
+    minutes_signed: { fr: "Procès-verbal signé", ar: "تم توقيع المحضر" },
+    decisions_notified: { fr: "Décisions notifiées", ar: "تم تبليغ القرارات" },
+    closed: { fr: "Clôturée", ar: "مختتمة" },
+    finalized: { fr: "Finalisée", ar: "مكتملة نهائياً" },
+    cancelled: { fr: "Annulée", ar: "ملغاة" },
+    postponed: { fr: "Reportée", ar: "مؤجلة" },
+    adjourned_no_quorum: {
+        fr: "Ajournée faute de quorum",
+        ar: "مؤجلة لعدم اكتمال النصاب",
+    },
+};
+const statusLabel = (status: string) =>
+    statusLabels[status]?.[ar ? "ar" : "fr"] ?? status;
 </script>
 <template>
     <AuthenticatedLayout
@@ -20,7 +44,7 @@ const ar = usePage<any>().props.locale === "ar";
                     <strong class="break-words"
                         >{{ a.reference }} · {{ a.type }}</strong
                     ><span class="rounded-full bg-teal-50 px-3 py-1 text-sm">{{
-                        a.status
+                        statusLabel(a.status)
                     }}</span>
                 </div>
                 <p class="mt-2 break-words text-sm text-slate-500">

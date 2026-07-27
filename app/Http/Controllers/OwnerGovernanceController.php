@@ -89,14 +89,14 @@ class OwnerGovernanceController extends Controller
     public function minutes(Request $r, AssemblyMinuteVersion $version, TenantContext $c, MinutesService $s)
     {
         $this->owner($version->minutes->assembly, $r, $c);
-        abort_unless($version->status === 'signed',404);
+        abort_unless($version->status === 'signed', 404);
 
         return $s->download($version);
     }
 
-    private function owner(Assembly $a,Request $r,TenantContext $c): void
+    private function owner(Assembly $a, Request $r, TenantContext $c): void
     {
-        abort_unless($a->organization_id === $c->organization()->id && $a->residence_id === $c->residence()->id,404);
-        $this->authorize('ownerPortal',$a);
+        abort_unless($a->organization_id === $c->organization()->id && $a->residence_id === $c->residence()->id, 404);
+        $this->authorize('ownerPortal', $a);
     }
 }

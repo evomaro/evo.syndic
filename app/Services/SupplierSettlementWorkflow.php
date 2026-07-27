@@ -18,6 +18,7 @@ class SupplierSettlementWorkflow
         private DocumentNumberService $numbers,
         private VoucherService $vouchers,
         private SupplierPayableService $payables,
+        private AutomatedAccountingPostingService $accounting,
     ) {}
 
     public function validate(SupplierSettlement $settlement, User $actor, string $mode = 'fifo', array $manual = []): SupplierSettlement
@@ -111,10 +112,11 @@ class SupplierSettlementWorkflow
                 'created_by' => $actor->id,
             ]);
             $settlement->update(['number' => $number, 'status' => 'validated', 'validated_at' => now(), 'validated_by' => $actor->id]);
+            $this->accounting->postSupplierSettlement($settlement->fresh('allocations'), $actor);
             activity()->performedOn($settlement)->causedBy($actor)->withProperties(['organization_id' => $settlement->organization_id, 'residence_id' => $settlement->residence_id, 'amount_cents' => $settlement->amount_cents])->log('supplier_settlement.validated');
 
             return $settlement->fresh(['allocations.line', 'documents']);
-        });
+        }, 5);
 
         $this->vouchers->generate($validated, $actor);
 
@@ -163,10 +165,11 @@ class SupplierSettlementWorkflow
             ]);
             $settlement->documents()->update(['status' => 'reversed']);
             $settlement->update(['status' => 'reversed', 'reversed_at' => now(), 'reversed_by' => $actor->id, 'reversal_reason' => $reason]);
+            $this->accounting->reverse('supplier_settlement', $settlement->id, $actor, $reason);
             activity()->performedOn($settlement)->causedBy($actor)->withProperties(['organization_id' => $settlement->organization_id, 'residence_id' => $settlement->residence_id, 'reason' => $reason])->log('supplier_settlement.reversed');
 
             return $settlement->fresh(['allocations.line', 'documents']);
-        });
+        }, 5);
     }
 
     private function fifoRows(SupplierSettlement $settlement): Collection

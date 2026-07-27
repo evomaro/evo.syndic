@@ -21,6 +21,11 @@ class AssemblyElectorate extends Model
         return $this->belongsTo(Assembly::class);
     }
 
+    public function eligibilitySnapshot()
+    {
+        return $this->belongsTo(AssemblyEligibilitySnapshot::class);
+    }
+
     public function contact()
     {
         return $this->belongsTo(Contact::class);

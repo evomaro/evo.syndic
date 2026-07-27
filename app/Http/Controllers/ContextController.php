@@ -13,7 +13,7 @@ class ContextController extends Controller
         abort_unless($request->user()->belongsToOrganization($organization), 403);
         $request->user()->update(['current_organization_id' => $organization->id, 'current_residence_id' => null]);
 
-        return back();
+        return redirect()->route('dashboard');
     }
 
     public function residence(Request $request, Residence $residence)
@@ -23,6 +23,6 @@ class ContextController extends Controller
         abort_unless($membership?->all_residences || $request->user()->residences()->whereKey($residence->id)->exists(), 403);
         $request->user()->update(['current_organization_id' => $residence->organization_id, 'current_residence_id' => $residence->id]);
 
-        return back();
+        return redirect()->route('dashboard');
     }
 }

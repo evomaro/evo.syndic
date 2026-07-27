@@ -72,6 +72,6 @@ class GovernanceController extends Controller
 
     private function scope(Assembly $a, TenantContext $c): void
     {
-        abort_unless($a->organization_id === $c->organization()->id && $a->residence_id === $c->residence()->id,404);
+        abort_unless($a->organization_id === $c->organization()->id && $a->residence_id === $c->residence()->id, 404);
     }
 }

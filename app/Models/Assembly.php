@@ -13,7 +13,11 @@ class Assembly extends Model
 
     protected function casts(): array
     {
-        return ['meeting_date' => 'date', 'convocation_deadline_at' => 'datetime', 'documents_available_at' => 'datetime', 'opened_at' => 'datetime', 'closed_at' => 'datetime'];
+        return [
+            'meeting_date' => 'date', 'eligibility_on' => 'date',
+            'convocation_deadline_at' => 'datetime', 'documents_available_at' => 'datetime',
+            'opened_at' => 'datetime', 'closed_at' => 'datetime', 'finalized_at' => 'datetime',
+        ];
     }
 
     public function organization()
@@ -54,6 +58,31 @@ class Assembly extends Model
     public function agendaItems()
     {
         return $this->hasMany(AssemblyAgendaItem::class);
+    }
+
+    public function agendaVersions()
+    {
+        return $this->hasMany(AssemblyAgendaVersion::class);
+    }
+
+    public function activeAgendaVersion()
+    {
+        return $this->belongsTo(AssemblyAgendaVersion::class, 'active_agenda_version_id');
+    }
+
+    public function eligibilitySnapshots()
+    {
+        return $this->hasMany(AssemblyEligibilitySnapshot::class);
+    }
+
+    public function eligibilitySnapshot()
+    {
+        return $this->belongsTo(AssemblyEligibilitySnapshot::class);
+    }
+
+    public function participants()
+    {
+        return $this->hasMany(AssemblyParticipant::class);
     }
 
     public function resolutions()

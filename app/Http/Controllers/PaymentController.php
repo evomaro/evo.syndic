@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FinancialExercise;
 use App\Models\Payment;
 use App\Rules\ValidMoney;
+use App\Services\AccountingSourceStatusService;
 use App\Services\PaymentWorkflow;
 use App\Support\Money;
 use App\Support\TenantContext;
@@ -61,7 +62,7 @@ class PaymentController extends Controller
         return redirect()->route('payments.show', $payment)->with('success', __('Paiement enregistré.'));
     }
 
-    public function show(Payment $payment, TenantContext $context)
+    public function show(Payment $payment, TenantContext $context, AccountingSourceStatusService $accounting)
     {
         $this->tenant($payment, $context);
         $chargeQuery = $context->residence()->lotCharges()->whereNull('cancelled_at')->whereIn('status', ['unpaid', 'partial']);
@@ -80,6 +81,9 @@ class PaymentController extends Controller
             'payment' => $payment->load(['payer', 'account', 'exercise', 'allocations.charge.fundCall', 'allocations.lot', 'allocations.reversedBy:id,name', 'documents'])->append(['allocated_cents', 'unallocated_cents', 'credit_cents']),
             'availableCharges' => $charges,
             'contacts' => $payment->payer_contact_id ? [] : $context->organization()->contacts()->where('active', true)->orderBy('last_name')->limit(100)->get()->map(fn ($contact) => ['id' => $contact->id, 'name' => $contact->display_name]),
+            'accountingPosting' => request()->user()->canInOrganization('view_source_postings', $context->organization())
+                ? $accounting->get('payment', $payment->id, $payment->organization_id, $payment->residence_id)
+                : null,
         ]);
     }
 

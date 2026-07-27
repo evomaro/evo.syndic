@@ -37,4 +37,9 @@ class AssemblyMinutes extends Model
     {
         return $this->belongsTo(AssemblyMinuteVersion::class, 'signed_version_id');
     }
+
+    public function approvals()
+    {
+        return $this->hasMany(AssemblyMinutesApproval::class);
+    }
 }

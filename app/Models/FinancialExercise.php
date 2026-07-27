@@ -14,7 +14,7 @@ class FinancialExercise extends Model
 
     protected function casts(): array
     {
-        return ['starts_on' => 'date:Y-m-d', 'ends_on' => 'date:Y-m-d', 'opened_at' => 'datetime', 'closed_at' => 'datetime', 'metadata' => 'array'];
+        return ['starts_on' => 'date:Y-m-d', 'ends_on' => 'date:Y-m-d', 'opened_at' => 'datetime', 'closed_at' => 'datetime', 'locked_at' => 'datetime', 'metadata' => 'array'];
     }
 
     public function residence()
@@ -30,5 +30,10 @@ class FinancialExercise extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function accountingPeriods()
+    {
+        return $this->hasMany(AccountingPeriod::class);
     }
 }

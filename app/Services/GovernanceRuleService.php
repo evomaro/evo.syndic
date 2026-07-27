@@ -26,6 +26,8 @@ class GovernanceRuleService
                         'proxy_restrictions' => config('governance.proxy'),
                         'eligibility_restrictions' => ['arrears_notice' => 'statutory_text_present_counsel_review_required'],
                         'legal_payload' => ['articles' => $rule['articles'], 'source' => $source, 'application_policy' => ['remote_voting' => false]],
+                        'status' => 'unverified_draft', 'confidence' => 'official_source_located',
+                        'active' => false, 'voting_share_source_type' => 'legacy_financial_allocation_preview',
                     ]
                 );
 
@@ -39,6 +41,7 @@ class GovernanceRuleService
         return [
             'identifier' => $rule->identifier, 'version' => $rule->version,
             'official_source' => $rule->official_source, 'source_url' => $rule->source_url, 'review_status' => $rule->review_status,
+            'status' => $rule->status, 'confidence' => $rule->confidence, 'active' => (bool) $rule->active,
             'numerator_definition' => $rule->numerator_definition, 'denominator_definition' => $rule->denominator_definition,
             'threshold_numerator' => (int) $rule->threshold_numerator, 'threshold_denominator' => (int) $rule->threshold_denominator,
             'comparison' => $rule->comparison, 'quorum_rule' => $rule->quorum_rule,
@@ -46,6 +49,7 @@ class GovernanceRuleService
             'second_convocation_behavior' => $rule->second_convocation_behavior,
             'proxy_restrictions' => $rule->proxy_restrictions, 'eligibility_restrictions' => $rule->eligibility_restrictions,
             'legal_payload' => $rule->legal_payload,
+            'legal_verification' => $rule->status === 'active' && in_array($rule->confidence, ['professionally_reviewed', 'counsel_reviewed'], true) ? 'reviewed_configuration' : 'unverified_technical_preview',
         ];
     }
 }

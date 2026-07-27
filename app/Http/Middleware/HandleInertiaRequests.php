@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\MembershipAuthorization;
+use App\Services\HelpCenterService;
 use Closure;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -77,6 +78,9 @@ class HandleInertiaRequests extends Middleware
             ],
             'locale' => app()->getLocale(),
             'notificationUnreadCount' => fn () => $request->user()?->unreadNotifications()->count() ?? 0,
+            'helpContext' => fn () => $organization && $user
+                ? app(HelpCenterService::class)->contextualMap($user, $organization)
+                : [],
             'flash' => ['success' => fn () => $request->session()->get('success')],
         ];
     }

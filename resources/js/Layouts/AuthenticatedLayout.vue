@@ -10,6 +10,10 @@ const collapsed = ref(false);
 const mobileSidebarOpen = ref(false);
 const tenant = computed(() => page.props.tenant ?? {});
 const isResident = computed(() => page.props.auth?.role === "coproprietaire");
+const contextualArticle = computed(() => {
+    const current = route().current();
+    return current ? page.props.helpContext?.[current] : null;
+});
 const nav = computed(() =>
     [
         { label: t("dashboard"), href: route("dashboard"), icon: "⌂" },
@@ -19,6 +23,28 @@ const nav = computed(() =>
                       label: t("finance"),
                       href: route("finance.index"),
                       icon: "₣",
+                      residence: true,
+                  },
+              ]
+            : []),
+        ...(page.props.auth?.permissions?.includes(
+            "view_accounting_configuration",
+        )
+            ? [
+                  {
+                      label: t("accounting"),
+                      href: route("accounting.index"),
+                      icon: "≋",
+                      residence: true,
+                  },
+              ]
+            : []),
+        ...(page.props.auth?.permissions?.includes("view_compliance_calendar")
+            ? [
+                  {
+                      label: t("compliance"),
+                      href: route("compliance.index"),
+                      icon: "✓",
                       residence: true,
                   },
               ]
@@ -147,6 +173,7 @@ const nav = computed(() =>
         },
         { label: t("activity"), href: route("activity.index"), icon: "◷" },
         { label: t("team"), href: route("team.index"), icon: "♙" },
+        { label: t("helpCenter"), href: route("help.index"), icon: "?" },
     ].filter((item) => !item.residence || tenant.value.residence),
 );
 const active = (href: string) =>
@@ -214,6 +241,62 @@ const mobileNav = computed<any[]>(() => {
                       label: t("more"),
                       href: route("finance.statements"),
                       icon: "•••",
+                  }
+                : null,
+        ].filter(Boolean);
+    }
+    if (page.url.startsWith("/accounting")) {
+        const permissions = page.props.auth?.permissions ?? [];
+        const canReport = permissions.some((permission: string) =>
+            [
+                "view_journal_reports",
+                "view_general_ledger",
+                "view_account_ledgers",
+                "view_trial_balance",
+                "view_accounting_receivables",
+                "view_accounting_payables",
+                "view_budget_actual",
+                "view_accounting_reconciliation",
+            ].includes(permission),
+        );
+        return [
+            {
+                label: t("accounting"),
+                href: route("accounting.index"),
+                icon: "⌂",
+            },
+            {
+                label: t("chartOfAccounts"),
+                href: route("accounting.index") + "#accounts",
+                icon: "≋",
+            },
+            {
+                label: t("periods"),
+                href: route("accounting.index") + "#periods",
+                icon: "▦",
+            },
+            {
+                label: t("journals"),
+                href: route("accounting.index") + "#journals",
+                icon: "▤",
+            },
+            {
+                label: t("entries"),
+                href: route("accounting.index") + "#entries",
+                icon: "↔",
+            },
+            canReport
+                ? {
+                      label: t("reports"),
+                      href: route("accounting.reports.index"),
+                      icon: "▥",
+                  }
+                : null,
+            permissions.includes("view_closing_readiness")
+                ? {
+                      label: t("closing"),
+                      href: route("accounting.closing.index"),
+                      icon: "✓",
                   }
                 : null,
         ].filter(Boolean);
@@ -559,6 +642,14 @@ const logout = async () => {
                         </p>
                     </div>
                     <slot name="actions" />
+                    <Link
+                        v-if="contextualArticle"
+                        :href="route('help.index', contextualArticle)"
+                        class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-3 text-sm font-semibold text-teal-800 hover:bg-teal-100 print:hidden"
+                    >
+                        <span aria-hidden="true">?</span>
+                        {{ t("contextualHelp") }}
+                    </Link>
                 </div>
                 <slot />
             </main>
@@ -572,9 +663,11 @@ const logout = async () => {
                 :key="item!.href"
                 :href="item!.href"
                 :class="active(item!.href) ? 'text-teal-700' : 'text-slate-500'"
-                class="flex min-h-16 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold"
+                class="flex min-h-16 min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden text-[10px] font-semibold"
                 ><span class="text-lg">{{ item!.icon }}</span
-                >{{ item!.label }}</Link
+                ><span class="max-w-full truncate px-1">{{
+                    item!.label
+                }}</span></Link
             >
         </nav>
     </div>

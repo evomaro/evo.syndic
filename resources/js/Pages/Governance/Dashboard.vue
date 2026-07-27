@@ -4,6 +4,30 @@ import GovernanceNav from "@/Components/Governance/GovernanceNav.vue";
 import { Link, usePage } from "@inertiajs/vue3";
 defineProps<{ metrics: any; upcoming: any[] }>();
 const ar = usePage<any>().props.locale === "ar";
+const statusLabels: Record<string, { fr: string; ar: string }> = {
+    draft: { fr: "Brouillon", ar: "مسودة" },
+    preparing: { fr: "En préparation", ar: "قيد الإعداد" },
+    convocation_issued: { fr: "Convocation émise", ar: "تم إصدار الدعوة" },
+    scheduled: { fr: "Programmée", ar: "مبرمجة" },
+    in_session: { fr: "En séance", ar: "الجلسة منعقدة" },
+    deliberations_completed: {
+        fr: "Délibérations terminées",
+        ar: "انتهاء المداولات",
+    },
+    minutes_prepared: { fr: "Procès-verbal préparé", ar: "تم إعداد المحضر" },
+    minutes_signed: { fr: "Procès-verbal signé", ar: "تم توقيع المحضر" },
+    decisions_notified: { fr: "Décisions notifiées", ar: "تم تبليغ القرارات" },
+    closed: { fr: "Clôturée", ar: "مختتمة" },
+    finalized: { fr: "Finalisée", ar: "مكتملة نهائياً" },
+    cancelled: { fr: "Annulée", ar: "ملغاة" },
+    postponed: { fr: "Reportée", ar: "مؤجلة" },
+    adjourned_no_quorum: {
+        fr: "Ajournée faute de quorum",
+        ar: "مؤجلة لعدم اكتمال النصاب",
+    },
+};
+const statusLabel = (status: string) =>
+    statusLabels[status]?.[ar ? "ar" : "fr"] ?? status;
 </script>
 <template>
     <AuthenticatedLayout
@@ -77,7 +101,8 @@ const ar = usePage<any>().props.locale === "ar";
                     ><span class="font-bold"
                         >{{ a.reference }} · {{ a.type }}</span
                     ><span class="text-sm text-slate-500"
-                        >{{ a.meeting_date }} · {{ a.status }}</span
+                        >{{ a.meeting_date }} ·
+                        {{ statusLabel(a.status) }}</span
                     ></Link
                 >
                 <p v-if="!upcoming.length" class="text-slate-500">

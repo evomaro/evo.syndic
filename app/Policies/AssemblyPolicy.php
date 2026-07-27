@@ -43,6 +43,6 @@ class AssemblyPolicy
 
     private function owner(User $user, Assembly $assembly): bool
     {
-        return (bool) app(GovernancePortalAccessService::class)->electorate($assembly,$user);
+        return (bool) app(GovernancePortalAccessService::class)->electorate($assembly, $user);
     }
 }

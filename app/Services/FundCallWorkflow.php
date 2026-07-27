@@ -10,7 +10,11 @@ use Illuminate\Validation\ValidationException;
 
 class FundCallWorkflow
 {
-    public function __construct(private DocumentNumberService $numbers, private FundCallDistributionService $distribution) {}
+    public function __construct(
+        private DocumentNumberService $numbers,
+        private FundCallDistributionService $distribution,
+        private AutomatedAccountingPostingService $accounting,
+    ) {}
 
     public function preview(FundCall $call): array
     {
@@ -29,6 +33,8 @@ class FundCallWorkflow
         return DB::transaction(function () use ($call, $actor) {
             $call = FundCall::query()->whereKey($call->id)->lockForUpdate()->with(['residence', 'exercise', 'lines.category', 'lines.allocationKey.values'])->firstOrFail();
             if ($call->status === 'validated') {
+                $this->accounting->postFundCall($call, $actor);
+
                 return $call->fresh(['charges']);
             }
             $this->assertDraft($call);
@@ -74,10 +80,11 @@ class FundCallWorkflow
             }
             $number = $this->numbers->next($call->residence, 'AF', (int) $call->issue_date->format('Y'));
             $call->update(['number' => $number, 'total_cents' => $total, 'status' => 'validated', 'validated_at' => now(), 'validated_by' => $actor->id]);
+            $this->accounting->postFundCall($call->fresh(['charges.line']), $actor);
             activity()->performedOn($call)->causedBy($actor)->withProperties(['organization_id' => $call->organization_id, 'residence_id' => $call->residence_id, 'from' => 'draft', 'to' => 'validated'])->log('fund_call.validated');
 
             return $call->fresh(['charges']);
-        });
+        }, 5);
     }
 
     public function cancel(FundCall $call, User $actor, string $reason): FundCall
@@ -96,10 +103,11 @@ class FundCallWorkflow
             }
             LotCharge::whereIn('id', $charges->pluck('id'))->update(['status' => 'cancelled', 'cancelled_at' => now()]);
             $call->update(['status' => 'cancelled', 'cancelled_at' => now(), 'cancelled_by' => $actor->id, 'cancellation_reason' => $reason]);
+            $this->accounting->reverse('fund_call', $call->id, $actor, $reason);
             activity()->performedOn($call)->causedBy($actor)->withProperties(['organization_id' => $call->organization_id, 'residence_id' => $call->residence_id, 'reason' => $reason])->log('fund_call.cancelled');
 
             return $call;
-        });
+        }, 5);
     }
 
     private function assertDraft(FundCall $call): void
