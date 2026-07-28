@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import FinanceNav from "@/Components/FinanceNav.vue";
 import { useI18n } from "@/i18n";
+import { formatMAD } from "@/Support/money";
 const p = defineProps<{
     payment?: any;
     exercises: any[];
@@ -37,24 +38,36 @@ const form = useForm({
 });
 const money = computed(() => {
     const n = Number(String(form.amount).replace(",", ".")) || 0;
-    return new Intl.NumberFormat(locale.value === "ar" ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(n);
+    return formatMAD(n);
 });
+const confirming = ref(false);
+const payerName = computed(
+    () =>
+        p.contacts.find((contact) => contact.id === form.payer_contact_id)
+            ?.name ||
+        form.received_from ||
+        "Payeur non identifié",
+);
+const save = () =>
+    p.payment
+        ? form.put(route("payments.update", p.payment.id), {
+              onSuccess: () => (confirming.value = false),
+          })
+        : form.post(route("payments.store"), {
+              onSuccess: () => (confirming.value = false),
+          });
 </script>
 <template>
     <AuthenticatedLayout :title="t('recordPayment')"
         ><FinanceNav />
         <form
             class="mx-auto grid max-w-4xl gap-5"
-            @submit.prevent="
-                p.payment
-                    ? form.put(route('payments.update', p.payment.id))
-                    : form.post(route('payments.store'))
-            "
+            @submit.prevent="confirming = true"
         >
-            <section class="panel grid gap-4 p-5 md:grid-cols-2">
+            <section
+                v-if="!confirming"
+                class="panel grid gap-4 p-5 md:grid-cols-2"
+            >
                 <label class="field"
                     ><span class="field-label">{{ t("exercises") }}</span
                     ><select v-model="form.financial_exercise_id" required>
@@ -116,7 +129,7 @@ const money = computed(() => {
                     ><input v-model="form.cheque_number"
                 /></label>
             </section>
-            <section class="panel p-5">
+            <section v-if="!confirming" class="panel p-5">
                 <h2 class="font-bold">{{ t("distribution") }}</h2>
                 <div class="mt-3 grid gap-3 sm:grid-cols-2">
                     <label
@@ -150,20 +163,74 @@ const money = computed(() => {
                     >
                 </div>
             </section>
+            <section v-else class="panel p-6 sm:p-8">
+                <p
+                    class="text-xs font-bold uppercase tracking-wider text-teal-700"
+                >
+                    Confirmation du paiement
+                </p>
+                <h2 class="mt-2 text-2xl font-bold">
+                    Vérifiez avant d’enregistrer
+                </h2>
+                <p class="mt-4 text-lg leading-8 text-slate-700">
+                    Un paiement de <strong>{{ money }}</strong> reçu de
+                    <strong>{{ payerName }}</strong> le
+                    <strong>{{ form.payment_date }}</strong> sera enregistré
+                    dans
+                    <strong>{{
+                        accounts.find(
+                            (account) =>
+                                account.id === form.financial_account_id,
+                        )?.name
+                    }}</strong
+                    >.
+                </p>
+                <p
+                    class="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900"
+                >
+                    {{
+                        form.validate_now
+                            ? "Le paiement sera validé immédiatement et affecté selon le mode choisi."
+                            : "Le paiement restera en brouillon jusqu’à sa validation."
+                    }}
+                </p>
+            </section>
             <div
                 class="sticky bottom-20 z-10 flex items-center justify-between rounded-2xl border bg-white p-4 shadow-xl lg:bottom-4"
             >
-                <div>
+                <button
+                    v-if="confirming"
+                    type="button"
+                    class="btn-secondary"
+                    @click="confirming = false"
+                >
+                    Modifier
+                </button>
+                <div v-else>
                     <small class="text-slate-500">{{ t("amount") }}</small
                     ><b class="block text-xl">{{ money }}</b>
                 </div>
                 <button
+                    v-if="!confirming"
                     class="btn-primary"
                     :disabled="
                         form.processing || !accounts.length || !exercises.length
                     "
                 >
                     {{ t("validateNow") }}
+                </button>
+                <button
+                    v-else
+                    type="button"
+                    class="btn-primary"
+                    :disabled="form.processing"
+                    @click="save"
+                >
+                    {{
+                        form.processing
+                            ? "Enregistrement…"
+                            : "Confirmer le paiement"
+                    }}
                 </button>
             </div>
             <p v-for="e in form.errors" class="text-sm text-red-600">{{ e }}</p>

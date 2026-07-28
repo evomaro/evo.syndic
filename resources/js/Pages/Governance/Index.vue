@@ -3,6 +3,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import GovernanceNav from "@/Components/Governance/GovernanceNav.vue";
 import { Link, router, usePage } from "@inertiajs/vue3";
 import { reactive } from "vue";
+import EmptyState from "@/Components/EmptyState.vue";
 const props = defineProps<{ assemblies: any; filters: any }>();
 const ar = usePage<any>().props.locale === "ar";
 const statusLabels: Record<string, { fr: string; ar: string }> = {
@@ -107,12 +108,21 @@ const apply = () =>
                     {{ a.meeting_date }} · {{ a.starts_at }} · {{ a.location }}
                 </p></Link
             >
-            <p
+            <EmptyState
                 v-if="!assemblies.data.length"
-                class="rounded-2xl border bg-white p-8 text-center text-slate-500"
+                :title="
+                    ar ? 'لا توجد جمعيات عامة' : 'Aucune assemblée générale'
+                "
+                :message="
+                    ar
+                        ? 'أنشئوا أول جمعية وابدؤوا بإعداد جدول الأعمال.'
+                        : 'Créez la première assemblée et commencez à préparer son ordre du jour.'
+                "
+                :primary-label="ar ? 'إنشاء جمعية' : 'Créer une assemblée'"
+                :primary-href="route('governance.create')"
             >
-                {{ ar ? "لا توجد نتائج" : "Aucun résultat" }}
-            </p>
+                <template #icon>⚖</template>
+            </EmptyState>
         </div>
         <div class="mt-5 flex flex-wrap gap-2">
             <Link

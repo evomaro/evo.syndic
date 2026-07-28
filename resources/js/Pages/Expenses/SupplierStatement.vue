@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { useI18n } from "@/i18n";
+import { formatMADCents as money } from "@/Support/money";
 const props = defineProps<{ statement: any }>();
 const { locale } = useI18n();
-const money = (c: number) =>
-    new Intl.NumberFormat(locale.value === "ar" ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(c / 100);
 </script>
 <template>
     <AuthenticatedLayout

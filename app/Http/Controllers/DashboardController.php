@@ -48,6 +48,29 @@ class DashboardController extends Controller
         }
 
         $helpChecklist = collect($helpCenter->checklist(request()->user(), $org, app()->getLocale()));
+        $nextStep = $helpChecklist->firstWhere('complete', false);
+        $nextStepRoutes = [
+            'setup-profile' => 'profile.edit',
+            'setup-residence' => 'residences.create',
+            'setup-structure' => 'structure.index',
+            'setup-contacts' => 'contacts.index',
+            'setup-ownerships' => 'structure.index',
+            'setup-suppliers' => 'suppliers.index',
+            'setup-accounting' => 'financial-exercises.index',
+            'setup-accounts' => 'financial-accounts.index',
+            'setup-allocations' => 'allocations.index',
+            'setup-charges' => 'charge-categories.index',
+            'setup-budget' => 'budgets.create',
+            'issue-fund-call' => 'fund-calls.create',
+            'record-payments' => 'payments.create',
+        ];
+        if ($nextStep) {
+            $routeName = $nextStepRoutes[$nextStep['id']] ?? null;
+            $nextStep['href'] = $routeName
+                ? route($routeName)
+                : route('help.index', $nextStep['article_id']);
+            $nextStep['help_href'] = route('help.index', $nextStep['article_id']);
+        }
 
         return Inertia::render('Dashboard', [
             'stats' => $stats,
@@ -59,6 +82,7 @@ class DashboardController extends Controller
                 'completed' => $helpChecklist->where('complete', true)->count(),
                 'total' => $helpChecklist->count(),
             ],
+            'nextSetupStep' => $nextStep,
         ]);
     }
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { useI18n } from "@/i18n";
+import { formatMADCents as money } from "@/Support/money";
 defineProps<{
     lots: any[];
     documents: any[];
@@ -10,11 +11,6 @@ defineProps<{
     unreadNotifications: number;
 }>();
 const { locale } = useI18n();
-const money = (c: number) =>
-    new Intl.NumberFormat(locale.value === "ar" ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(c / 100);
 const text = (fr: string, ar: string) => (locale.value === "ar" ? ar : fr);
 const date = (value: string) =>
     new Intl.DateTimeFormat(locale.value === "ar" ? "ar-MA" : "fr-MA").format(

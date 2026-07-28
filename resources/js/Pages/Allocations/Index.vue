@@ -4,6 +4,7 @@ import { useForm } from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { useI18n } from "@/i18n";
 import Pagination from "@/Components/Pagination.vue";
+import InfoTooltip from "@/Components/InfoTooltip.vue";
 const p = defineProps<{ keys: any[]; lots: any }>();
 const { t } = useI18n();
 const selected = ref(p.keys[0]?.id);
@@ -52,7 +53,13 @@ const bulk = useForm({ paste: "" });
 </script>
 <template>
     <AuthenticatedLayout :title="t('allocations')"
-        ><div class="grid gap-5 xl:grid-cols-[320px_1fr]">
+        ><p class="mb-5 text-sm text-slate-600">
+            {{ t("allocations") }}
+            <InfoTooltip term="tantiemes" />
+            · {{ t("distribution") }}
+            <InfoTooltip term="distribution_key" />
+        </p>
+        <div class="grid gap-5 xl:grid-cols-[320px_1fr]">
             <aside class="space-y-3">
                 <form
                     class="panel grid gap-3 p-4"

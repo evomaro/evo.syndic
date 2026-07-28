@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "@/i18n";
+import { formatMADCents as money } from "@/Support/money";
 const { locale } = useI18n();
 const text = (fr: string, ar: string) => (locale.value === "ar" ? ar : fr);
 const props = defineProps<{ lines: any[] }>();
@@ -27,11 +28,6 @@ const tax = computed(() =>
         0,
     ),
 );
-const money = (v: number) =>
-    new Intl.NumberFormat(locale.value === "ar" ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(v / 100);
 </script>
 <template>
     <div class="grid grid-cols-3 gap-3 rounded-lg bg-slate-50 p-4 text-sm">

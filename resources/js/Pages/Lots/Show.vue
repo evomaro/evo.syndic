@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import { Link, useForm } from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ContactPicker from "@/Components/ContactPicker.vue";
+import InfoTooltip from "@/Components/InfoTooltip.vue";
 import { useI18n } from "@/i18n";
 
 const props = defineProps<{ lot: any }>();
@@ -164,7 +165,10 @@ const date = (value: string) => new Date(value).toLocaleDateString();
                     </div>
                 </dl>
                 <div class="mt-6 border-t pt-5">
-                    <h3 class="text-sm font-bold">{{ t("allocations") }}</h3>
+                    <h3 class="text-sm font-bold">
+                        {{ t("allocations") }}
+                        <InfoTooltip term="tantiemes" />
+                    </h3>
                     <div
                         v-for="value in lot.allocation_values"
                         :key="value.id"
@@ -219,7 +223,9 @@ const date = (value: string) => new Date(value).toLocaleDateString();
                         v-model="owner.contact_id"
                         @select="selectOwner(index, $event)"
                     /><label class="field"
-                        ><span class="field-label">{{ t("percentage") }}</span
+                        ><span class="field-label"
+                            >{{ t("percentage") }}
+                            <InfoTooltip term="ownership_share" /></span
                         ><input
                             v-model="owner.percentage"
                             type="number"

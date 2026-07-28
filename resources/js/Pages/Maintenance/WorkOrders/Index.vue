@@ -3,6 +3,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import MaintenanceNav from "@/Components/Maintenance/MaintenanceNav.vue";
 import Pagination from "@/Components/Pagination.vue";
 import { router, useForm, usePage } from "@inertiajs/vue3";
+import { formatMADCents } from "@/Support/money";
 defineProps<{ workOrders: any; filters: any }>();
 const page = usePage<any>();
 const ar = page.props.locale === "ar";
@@ -144,7 +145,7 @@ const reschedule = (workOrder: any) => {
                 class="mt-4 rounded-xl bg-emerald-50 p-3 text-sm font-semibold"
             >
                 Facture Phase 03 · {{ w.invoice.status }} ·
-                {{ (w.invoice.total_cents / 100).toFixed(2) }} MAD
+                {{ formatMADCents(w.invoice.total_cents) }}
             </div>
         </article>
         <Pagination :links="workOrders.links"

@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { Link } from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { useI18n } from "@/i18n";
+import { formatMADCents } from "@/Support/money";
 const props = defineProps<{
     stats: Record<string, number>;
     isResidence: boolean;
@@ -10,29 +11,72 @@ const props = defineProps<{
     finance?: any[] | null;
     expenses?: any[] | null;
     helpProgress: { completed: number; total: number };
+    nextSetupStep?: {
+        id: string;
+        title: string;
+        purpose: string;
+        href: string;
+        help_href: string;
+    } | null;
 }>();
 const { t } = useI18n();
-const cards = computed(() =>
+type DashboardCard = {
+    stat: string;
+    label: string;
+    routeName: string;
+    params?: Record<string, string>;
+};
+const cards = computed<DashboardCard[]>(() =>
     props.isResidence
         ? [
-              ["buildings", "buildings", "structure.index"],
-              ["lots", "lots", "structure.index"],
-              ["owners", "owners", "contacts.index"],
-              ["occupants", "occupants", "contacts.index"],
-              ["vacant", "vacantLots", "structure.index"],
-              ["missing_owners", "missingOwners", "structure.index"],
-              [
-                  "missing_allocations",
-                  "missingAllocations",
-                  "allocations.index",
-              ],
+              {
+                  stat: "buildings",
+                  label: "buildings",
+                  routeName: "structure.index",
+              },
+              { stat: "lots", label: "lots", routeName: "structure.index" },
+              { stat: "owners", label: "owners", routeName: "contacts.index" },
+              {
+                  stat: "occupants",
+                  label: "occupants",
+                  routeName: "contacts.index",
+              },
+              {
+                  stat: "vacant",
+                  label: "vacantLots",
+                  routeName: "structure.index",
+                  params: { status: "vacant" },
+              },
+              {
+                  stat: "missing_owners",
+                  label: "missingOwners",
+                  routeName: "structure.index",
+                  params: { status: "missing_owner" },
+              },
+              {
+                  stat: "missing_allocations",
+                  label: "missingAllocations",
+                  routeName: "allocations.index",
+              },
           ]
         : [
-              ["residences", "residences", "residences.index"],
-              ["lots", "lots", "structure.index"],
-              ["contacts", "contacts", "contacts.index"],
-              ["setup", "setup", "residences.index"],
-              ["invitations", "invitations", "team.index"],
+              {
+                  stat: "residences",
+                  label: "residences",
+                  routeName: "residences.index",
+              },
+              { stat: "lots", label: "lots", routeName: "structure.index" },
+              {
+                  stat: "contacts",
+                  label: "contacts",
+                  routeName: "contacts.index",
+              },
+              { stat: "setup", label: "setup", routeName: "residences.index" },
+              {
+                  stat: "invitations",
+                  label: "invitations",
+                  routeName: "team.index",
+              },
           ],
 );
 </script>
@@ -40,54 +84,71 @@ const cards = computed(() =>
     <AuthenticatedLayout
         :title="t('dashboard')"
         :subtitle="isResidence ? t('setupChecklist') : t('organization')"
-        ><div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        ><section
+            v-if="nextSetupStep"
+            class="mb-6 overflow-hidden rounded-3xl bg-slate-950 p-6 text-white shadow-xl sm:p-8"
+        >
+            <div
+                class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"
+            >
+                <div class="max-w-2xl">
+                    <p
+                        class="text-xs font-bold uppercase tracking-[.18em] text-teal-300"
+                    >
+                        {{ t("nextStep") }}
+                    </p>
+                    <h2 class="mt-2 text-2xl font-bold">
+                        {{ nextSetupStep.title }}
+                    </h2>
+                    <p class="mt-2 text-sm leading-6 text-slate-300">
+                        {{ nextSetupStep.purpose }}
+                    </p>
+                </div>
+                <Link
+                    :href="nextSetupStep.href"
+                    class="inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl bg-teal-400 px-5 font-bold text-slate-950 hover:bg-teal-300"
+                >
+                    {{ t("startStep") }} →
+                </Link>
+            </div>
+            <div
+                class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4 text-sm"
+            >
+                <span class="text-slate-400">
+                    {{ helpProgress.completed }}/{{ helpProgress.total }}
+                    {{ t("stepsCompleted") }}
+                </span>
+                <Link
+                    :href="route('help.index', 'first-use-checklist')"
+                    class="font-semibold text-teal-300 hover:text-teal-200"
+                >
+                    {{ t("viewAllSteps") }}
+                </Link>
+            </div>
+        </section>
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <Link
                 v-for="card in cards"
-                :key="card[0]"
-                :href="route(card[2])"
-                class="stat"
+                :key="card.stat"
+                :href="route(card.routeName, card.params)"
+                class="stat group relative"
                 ><p
                     class="text-xs font-semibold uppercase tracking-wide text-slate-500"
                 >
-                    {{ t(card[1]) }}
+                    {{ t(card.label) }}
                 </p>
                 <p
                     class="mt-3 text-3xl font-bold tracking-tight text-slate-950"
                 >
-                    {{ stats[card[0]] ?? 0 }}
-                </p></Link
+                    {{ stats[card.stat] ?? 0 }}
+                </p>
+                <span
+                    class="absolute end-4 top-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-teal-700"
+                    aria-hidden="true"
+                    >→</span
+                ></Link
             >
         </div>
-        <Link
-            v-if="helpProgress.completed < helpProgress.total"
-            :href="route('help.index', 'first-use-checklist')"
-            class="mt-6 block rounded-2xl border border-teal-200 bg-gradient-to-r from-teal-50 to-white p-5 shadow-sm hover:border-teal-400"
-        >
-            <div class="flex items-center justify-between gap-4">
-                <div>
-                    <p
-                        class="text-xs font-bold uppercase tracking-wider text-teal-700"
-                    >
-                        {{ t("helpCenter") }}
-                    </p>
-                    <h2 class="mt-1 font-bold text-slate-950">
-                        {{ t("setupChecklist") }}
-                    </h2>
-                    <p class="mt-1 text-sm text-slate-600">
-                        {{ helpProgress.completed }}/{{ helpProgress.total }}
-                    </p>
-                </div>
-                <span class="text-2xl text-teal-700" aria-hidden="true">→</span>
-            </div>
-            <div class="mt-4 h-2 overflow-hidden rounded-full bg-teal-100">
-                <div
-                    class="h-full rounded-full bg-teal-600"
-                    :style="{
-                        width: `${Math.round((helpProgress.completed / helpProgress.total) * 100)}%`,
-                    }"
-                ></div>
-            </div>
-        </Link>
         <section v-if="finance?.length" class="panel mt-6 overflow-hidden">
             <div class="panel-head">
                 <h2 class="font-bold">{{ t("finance") }}</h2>
@@ -110,21 +171,13 @@ const cards = computed(() =>
                         <span class="text-slate-500"
                             >{{ t("amountCollected")
                             }}<b class="block text-slate-900"
-                                >{{
-                                    (row.collected_cents / 100).toLocaleString()
-                                }}
-                                MAD</b
-                            ></span
+                                >{{ formatMADCents(row.collected_cents) }}
+                            </b></span
                         ><span class="text-slate-500"
                             >{{ t("outstandingAmount")
                             }}<b class="block text-red-700"
-                                >{{
-                                    (
-                                        row.outstanding_cents / 100
-                                    ).toLocaleString()
-                                }}
-                                MAD</b
-                            ></span
+                                >{{ formatMADCents(row.outstanding_cents) }}
+                            </b></span
                         >
                     </div></Link
                 >
@@ -149,11 +202,8 @@ const cards = computed(() =>
                     <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
                         <span class="text-slate-500"
                             >Budget<b class="block text-slate-900"
-                                >{{
-                                    (row.budget_cents / 100).toLocaleString()
-                                }}
-                                MAD</b
-                            ></span
+                                >{{ formatMADCents(row.budget_cents) }}
+                            </b></span
                         ><span class="text-slate-500"
                             >Réel<b
                                 class="block"
@@ -162,18 +212,12 @@ const cards = computed(() =>
                                         ? 'text-red-700'
                                         : 'text-slate-900'
                                 "
-                                >{{
-                                    (row.actual_cents / 100).toLocaleString()
-                                }}
-                                MAD</b
-                            ></span
+                                >{{ formatMADCents(row.actual_cents) }}
+                            </b></span
                         ><span class="text-slate-500"
                             >À payer<b class="block text-slate-900"
-                                >{{
-                                    (row.payable_cents / 100).toLocaleString()
-                                }}
-                                MAD</b
-                            ></span
+                                >{{ formatMADCents(row.payable_cents) }}
+                            </b></span
                         ><span class="text-slate-500"
                             >Contrats à renouveler<b
                                 class="block text-slate-900"
@@ -227,7 +271,9 @@ const cards = computed(() =>
             <h2 class="font-bold">{{ t("setupChecklist") }}</h2>
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
                 <Link
-                    :href="route('structure.index')"
+                    :href="
+                        route('structure.index', { status: 'missing_owner' })
+                    "
                     class="flex min-h-14 items-center justify-between rounded-xl bg-slate-50 px-4 text-sm font-semibold"
                     ><span
                         >{{ stats.missing_owners ? "!" : "✓" }}

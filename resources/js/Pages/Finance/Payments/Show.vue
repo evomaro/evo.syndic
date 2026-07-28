@@ -5,6 +5,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import FinanceNav from "@/Components/FinanceNav.vue";
 import AccountingPostingStatus from "@/Components/AccountingPostingStatus.vue";
 import { useI18n } from "@/i18n";
+import { formatMADCents as money } from "@/Support/money";
 const p = defineProps<{
     payment: any;
     availableCharges: any[];
@@ -18,11 +19,6 @@ const identifyForm = useForm({ contact_id: null as number | null });
 const allocationMode = ref("fifo");
 const manualChargeId = ref<number | null>(null);
 const manualAmount = ref("");
-const money = (c: number) =>
-    new Intl.NumberFormat(locale.value === "ar" ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(c / 100);
 const validatePayment = () =>
     useForm({
         allocation_mode: allocationMode.value,

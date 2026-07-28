@@ -4,6 +4,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ExpenseNavigation from "@/Components/Expenses/ExpenseNavigation.vue";
 import Pagination from "@/Components/Pagination.vue";
 import FinancialStatusBadge from "@/Components/Expenses/FinancialStatusBadge.vue";
+import EmptyState from "@/Components/EmptyState.vue";
 defineProps<{ budgets: any }>();
 </script>
 <template>
@@ -16,7 +17,7 @@ defineProps<{ budgets: any }>();
                 >Nouveau budget</Link
             >
         </div>
-        <div class="panel divide-y">
+        <div v-if="budgets.data.length" class="panel divide-y">
             <Link
                 v-for="b in budgets.data"
                 :key="b.id"
@@ -28,6 +29,15 @@ defineProps<{ budgets: any }>();
                 ><FinancialStatusBadge :status="b.status"
             /></Link>
         </div>
+        <EmptyState
+            v-else
+            title="Aucun budget"
+            message="Créez le premier budget de la résidence pour planifier et suivre les dépenses."
+            primary-label="Créer un budget"
+            :primary-href="route('budgets.create')"
+        >
+            <template #icon>▤</template>
+        </EmptyState>
         <Pagination :links="budgets.links"
     /></AuthenticatedLayout>
 </template>

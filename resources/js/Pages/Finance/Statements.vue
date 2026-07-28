@@ -4,6 +4,7 @@ import { reactive } from "vue";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import FinanceNav from "@/Components/FinanceNav.vue";
 import { useI18n } from "@/i18n";
+import { formatMADCents as money } from "@/Support/money";
 const p = defineProps<{
     lots: any[];
     selectedLot: number;
@@ -18,11 +19,6 @@ const filters = reactive({
     to: p.filters.to || "",
 });
 const { t, locale } = useI18n();
-const money = (c: number) =>
-    new Intl.NumberFormat(locale.value === "ar" ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(c / 100);
 </script>
 <template>
     <AuthenticatedLayout :title="t('statements')"

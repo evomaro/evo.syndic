@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import GovernanceNav from "@/Components/Governance/GovernanceNav.vue";
+import InfoTooltip from "@/Components/InfoTooltip.vue";
 import InputError from "@/Components/InputError.vue";
 import { router, useForm, usePage } from "@inertiajs/vue3";
 const props = defineProps<{
@@ -748,6 +749,7 @@ const execution = (r: any) => {
                         {{
                             ar ? "أسئلة الملاك" : "Questions des propriétaires"
                         }}
+                        <InfoTooltip term="assembly_minutes" />
                     </h2>
                     <div
                         v-for="q in a.agenda_questions"

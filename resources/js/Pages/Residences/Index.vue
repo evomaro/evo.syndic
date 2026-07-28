@@ -7,7 +7,9 @@ defineProps<{ residences: any }>();
 const { t } = useI18n();
 </script>
 <template>
-    <AuthenticatedLayout :title="t('residences')"
+    <AuthenticatedLayout
+        :title="t('residences')"
+        :subtitle="t('residencesSubtitle')"
         ><template #actions
             ><Link :href="route('residences.create')" class="btn-primary"
                 >＋ {{ t("newResidence") }}</Link

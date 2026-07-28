@@ -3,6 +3,7 @@ import { Link } from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import FinanceNav from "@/Components/FinanceNav.vue";
 import { useI18n } from "@/i18n";
+import { formatMADCents as money } from "@/Support/money";
 const props = defineProps<{
     metrics: any;
     accounts: any[];
@@ -42,11 +43,6 @@ const cards = [
     ],
 ] as const;
 const { t, locale } = useI18n();
-const money = (cents: number) =>
-    new Intl.NumberFormat(locale.value === "ar" ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(cents / 100);
 </script>
 <template>
     <AuthenticatedLayout :title="t('finance')" :subtitle="t('financeOverview')">

@@ -2,6 +2,7 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { router } from "@inertiajs/vue3";
 import { useI18n } from "@/i18n";
+import { formatMADCents as money } from "@/Support/money";
 const props = defineProps<{
     rows: any[];
     totals: any;
@@ -9,11 +10,6 @@ const props = defineProps<{
     filters: any;
 }>();
 const { locale } = useI18n();
-const money = (c: number) =>
-    new Intl.NumberFormat(locale.value === "ar" ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(c / 100);
 const filter = (e: Event) =>
     router.get(
         route("supplier-payables.index"),

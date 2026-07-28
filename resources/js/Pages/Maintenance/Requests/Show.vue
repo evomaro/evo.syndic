@@ -3,6 +3,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import MaintenanceNav from "@/Components/Maintenance/MaintenanceNav.vue";
 import InputError from "@/Components/InputError.vue";
 import { router, useForm, usePage } from "@inertiajs/vue3";
+import { formatMADCents } from "@/Support/money";
 const props = defineProps<{ maintenanceRequest: any; options: any }>();
 const page = usePage<any>();
 const ar = page.props.locale === "ar";
@@ -270,7 +271,7 @@ const uploadDocument = () =>
                     >
                         <span class="min-w-0 break-words"
                             >{{ q.supplier.legal_name }} ·
-                            {{ (q.total_cents / 100).toFixed(2) }} MAD ·
+                            {{ formatMADCents(q.total_cents) }} ·
                             {{ q.status }}</span
                         ><button
                             v-if="

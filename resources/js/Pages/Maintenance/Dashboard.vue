@@ -2,14 +2,10 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import MaintenanceNav from "@/Components/Maintenance/MaintenanceNav.vue";
 import { Link, usePage } from "@inertiajs/vue3";
+import { formatMADCents as money } from "@/Support/money";
 defineProps<{ metrics: any }>();
 const page = usePage<any>();
 const ar = page.props.locale === "ar";
-const money = (value: number) =>
-    new Intl.NumberFormat(ar ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(value / 100);
 </script>
 
 <template>

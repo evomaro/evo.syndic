@@ -1,21 +1,82 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import { useI18n } from "@/i18n";
+import GuidedSetupTour from "@/Components/GuidedSetupTour.vue";
 
 defineProps<{ title?: string; subtitle?: string }>();
 const page = usePage<any>();
 const { t, dir } = useI18n();
 const collapsed = ref(false);
 const mobileSidebarOpen = ref(false);
+type NavSectionKey =
+    | "finance"
+    | "operations"
+    | "communication"
+    | "governanceCompliance"
+    | "administration";
+type NavItem = {
+    label: string;
+    href: string;
+    icon: string;
+    residence?: boolean;
+    section?: NavSectionKey;
+    tour?: "residences" | "structure" | "contacts";
+};
+const navSectionKeys: NavSectionKey[] = [
+    "finance",
+    "operations",
+    "communication",
+    "governanceCompliance",
+    "administration",
+];
+const navSectionStorageKey = "evosyndic.sidebar.sections.v1";
+const expandedSections = ref<Record<NavSectionKey, boolean>>({
+    finance: true,
+    operations: true,
+    communication: true,
+    governanceCompliance: true,
+    administration: true,
+});
+onMounted(() => {
+    const saved = window.localStorage.getItem(navSectionStorageKey);
+    if (saved) {
+        try {
+            expandedSections.value = {
+                ...expandedSections.value,
+                ...JSON.parse(saved),
+            };
+            return;
+        } catch {
+            window.localStorage.removeItem(navSectionStorageKey);
+        }
+    }
+    if (!window.matchMedia("(min-width: 1024px)").matches) {
+        expandedSections.value = Object.fromEntries(
+            navSectionKeys.map((key) => [key, false]),
+        ) as Record<NavSectionKey, boolean>;
+    }
+});
+watch(
+    expandedSections,
+    (value) =>
+        window.localStorage.setItem(
+            navSectionStorageKey,
+            JSON.stringify(value),
+        ),
+    { deep: true },
+);
+const toggleSection = (key: NavSectionKey) => {
+    expandedSections.value[key] = !expandedSections.value[key];
+};
 const tenant = computed(() => page.props.tenant ?? {});
 const isResident = computed(() => page.props.auth?.role === "coproprietaire");
 const contextualArticle = computed(() => {
     const current = route().current();
     return current ? page.props.helpContext?.[current] : null;
 });
-const nav = computed(() =>
-    [
+const nav = computed<NavItem[]>(() => {
+    const items: NavItem[] = [
         { label: t("dashboard"), href: route("dashboard"), icon: "⌂" },
         ...(page.props.auth?.permissions?.includes("view_finance")
             ? [
@@ -24,6 +85,7 @@ const nav = computed(() =>
                       href: route("finance.index"),
                       icon: "₣",
                       residence: true,
+                      section: "finance" as NavSectionKey,
                   },
               ]
             : []),
@@ -36,6 +98,7 @@ const nav = computed(() =>
                       href: route("accounting.index"),
                       icon: "≋",
                       residence: true,
+                      section: "finance" as NavSectionKey,
                   },
               ]
             : []),
@@ -46,6 +109,7 @@ const nav = computed(() =>
                       href: route("compliance.index"),
                       icon: "✓",
                       residence: true,
+                      section: "governanceCompliance" as NavSectionKey,
                   },
               ]
             : []),
@@ -56,6 +120,7 @@ const nav = computed(() =>
                       href: route("expenses.index"),
                       icon: "⇩",
                       residence: true,
+                      section: "finance" as NavSectionKey,
                   },
               ]
             : []),
@@ -66,6 +131,7 @@ const nav = computed(() =>
                       href: route("portal.maintenance.index"),
                       icon: "⚒",
                       residence: true,
+                      section: "operations" as NavSectionKey,
                   },
               ]
             : page.props.auth?.permissions?.includes(
@@ -77,6 +143,7 @@ const nav = computed(() =>
                         href: route("maintenance.dashboard"),
                         icon: "⚒",
                         residence: true,
+                        section: "operations" as NavSectionKey,
                     },
                 ]
               : []),
@@ -87,6 +154,7 @@ const nav = computed(() =>
                       href: route("owner-governance.index"),
                       icon: "⚖",
                       residence: true,
+                      section: "governanceCompliance" as NavSectionKey,
                   },
               ]
             : page.props.auth?.permissions?.includes(
@@ -98,6 +166,7 @@ const nav = computed(() =>
                         href: route("governance.dashboard"),
                         icon: "⚖",
                         residence: true,
+                        section: "governanceCompliance" as NavSectionKey,
                     },
                 ]
               : []),
@@ -108,6 +177,7 @@ const nav = computed(() =>
                       href: route("portal.documents"),
                       icon: "▤",
                       residence: true,
+                      section: "communication" as NavSectionKey,
                   },
               ]
             : page.props.auth?.permissions?.includes("view_documents")
@@ -117,6 +187,7 @@ const nav = computed(() =>
                         href: route("documents.index"),
                         icon: "▤",
                         residence: true,
+                        section: "communication" as NavSectionKey,
                     },
                 ]
               : []),
@@ -127,6 +198,7 @@ const nav = computed(() =>
                       href: route("portal.announcements"),
                       icon: "◉",
                       residence: true,
+                      section: "communication" as NavSectionKey,
                   },
               ]
             : page.props.auth?.permissions?.includes("view_announcements")
@@ -136,6 +208,7 @@ const nav = computed(() =>
                         href: route("announcements.index"),
                         icon: "◉",
                         residence: true,
+                        section: "communication" as NavSectionKey,
                     },
                 ]
               : []),
@@ -144,37 +217,81 @@ const nav = computed(() =>
             href: route("notifications.index"),
             icon: "♢",
             residence: true,
+            section: "communication" as NavSectionKey,
         },
         {
             label: t("residentPortal"),
             href: route("portal.index"),
             icon: "⌂",
             residence: true,
+            section: "communication" as NavSectionKey,
         },
-        { label: t("residences"), href: route("residences.index"), icon: "◇" },
+        {
+            label: t("residences"),
+            href: route("residences.index"),
+            icon: "◇",
+            section: "operations" as NavSectionKey,
+            tour: "residences",
+        },
         {
             label: t("structure"),
             href: route("structure.index"),
             icon: "▦",
             residence: true,
+            section: "operations" as NavSectionKey,
+            tour: "structure",
         },
-        { label: t("contacts"), href: route("contacts.index"), icon: "◎" },
+        {
+            label: t("contacts"),
+            href: route("contacts.index"),
+            icon: "◎",
+            section: "administration" as NavSectionKey,
+            tour: "contacts",
+        },
         {
             label: t("allocations"),
             href: route("allocations.index"),
             icon: "∑",
             residence: true,
+            section: "finance" as NavSectionKey,
         },
         {
             label: t("imports"),
             href: route("imports.index"),
             icon: "⇧",
             residence: true,
+            section: "administration" as NavSectionKey,
         },
-        { label: t("activity"), href: route("activity.index"), icon: "◷" },
-        { label: t("team"), href: route("team.index"), icon: "♙" },
-        { label: t("helpCenter"), href: route("help.index"), icon: "?" },
-    ].filter((item) => !item.residence || tenant.value.residence),
+        {
+            label: t("activity"),
+            href: route("activity.index"),
+            icon: "◷",
+            section: "administration" as NavSectionKey,
+        },
+        {
+            label: t("team"),
+            href: route("team.index"),
+            icon: "♙",
+            section: "administration" as NavSectionKey,
+        },
+        {
+            label: t("helpCenter"),
+            href: route("help.index"),
+            icon: "?",
+            section: "administration" as NavSectionKey,
+        },
+    ];
+    return items.filter((item) => !item.residence || tenant.value.residence);
+});
+const homeNav = computed<NavItem>(() => nav.value[0]!);
+const navSections = computed(() =>
+    navSectionKeys
+        .map((key) => ({
+            key,
+            label: t(`navSection${key[0].toUpperCase()}${key.slice(1)}`),
+            items: nav.value.filter((item) => item.section === key),
+        }))
+        .filter((section) => section.items.length),
 );
 const active = (href: string) =>
     page.url === new URL(href, window.location.origin).pathname ||
@@ -417,23 +534,69 @@ const logout = async () => {
                 class="sidebar-scroll min-h-0 flex-1 space-y-1 overflow-x-hidden overflow-y-auto overscroll-contain p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-400"
             >
                 <Link
-                    v-for="item in nav"
-                    :key="item.href"
-                    :href="item.href"
-                    :aria-label="collapsed ? item.label : undefined"
-                    :title="collapsed ? item.label : undefined"
+                    :href="homeNav.href"
+                    :aria-label="collapsed ? homeNav.label : undefined"
+                    :title="collapsed ? homeNav.label : undefined"
                     :class="
-                        active(item.href)
+                        active(homeNav.href)
                             ? 'bg-white text-slate-950'
                             : 'text-slate-300 hover:bg-white/10 hover:text-white'
                     "
                     class="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition"
                 >
                     <span class="w-6 text-center text-lg" aria-hidden="true">{{
-                        item.icon
+                        homeNav.icon
                     }}</span
-                    ><span v-if="!collapsed">{{ item.label }}</span>
+                    ><span v-if="!collapsed">{{ homeNav.label }}</span>
                 </Link>
+                <div
+                    v-for="section in navSections"
+                    :key="section.key"
+                    :class="collapsed ? '' : 'pt-3'"
+                >
+                    <button
+                        v-if="!collapsed"
+                        type="button"
+                        class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-start text-[10px] font-bold uppercase tracking-[.14em] text-slate-500 hover:bg-white/5 hover:text-slate-300"
+                        :aria-expanded="expandedSections[section.key]"
+                        @click="toggleSection(section.key)"
+                    >
+                        <span>{{ section.label }}</span>
+                        <span
+                            class="transition"
+                            :class="
+                                expandedSections[section.key] ? 'rotate-90' : ''
+                            "
+                            aria-hidden="true"
+                            >›</span
+                        >
+                    </button>
+                    <div
+                        v-show="collapsed || expandedSections[section.key]"
+                        class="space-y-1"
+                    >
+                        <Link
+                            v-for="item in section.items"
+                            :key="item.href"
+                            :href="item.href"
+                            :data-tour="item.tour"
+                            :aria-label="collapsed ? item.label : undefined"
+                            :title="collapsed ? item.label : undefined"
+                            :class="
+                                active(item.href)
+                                    ? 'bg-white text-slate-950'
+                                    : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                            "
+                            class="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition"
+                        >
+                            <span
+                                class="w-6 text-center text-lg"
+                                aria-hidden="true"
+                                >{{ item.icon }}</span
+                            ><span v-if="!collapsed">{{ item.label }}</span>
+                        </Link>
+                    </div>
+                </div>
             </nav>
             <div class="shrink-0 border-t border-white/10">
                 <button
@@ -501,11 +664,9 @@ const logout = async () => {
                 class="sidebar-scroll min-h-0 flex-1 space-y-1 overflow-x-hidden overflow-y-auto overscroll-contain p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-400"
             >
                 <Link
-                    v-for="item in nav"
-                    :key="item.href"
-                    :href="item.href"
+                    :href="homeNav.href"
                     :class="
-                        active(item.href)
+                        active(homeNav.href)
                             ? 'bg-white text-slate-950'
                             : 'text-slate-300 hover:bg-white/10 hover:text-white'
                     "
@@ -513,10 +674,57 @@ const logout = async () => {
                     @click="mobileSidebarOpen = false"
                 >
                     <span class="w-6 text-center text-lg" aria-hidden="true">{{
-                        item.icon
+                        homeNav.icon
                     }}</span>
-                    <span>{{ item.label }}</span>
+                    <span>{{ homeNav.label }}</span>
                 </Link>
+                <div
+                    v-for="section in navSections"
+                    :key="section.key"
+                    class="pt-2"
+                >
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-start text-[10px] font-bold uppercase tracking-[.14em] text-slate-500 hover:bg-white/5 hover:text-slate-300"
+                        :aria-expanded="expandedSections[section.key]"
+                        @click="toggleSection(section.key)"
+                    >
+                        <span>{{ section.label }}</span>
+                        <span
+                            class="transition"
+                            :class="
+                                expandedSections[section.key] ? 'rotate-90' : ''
+                            "
+                            aria-hidden="true"
+                            >›</span
+                        >
+                    </button>
+                    <div
+                        v-show="expandedSections[section.key]"
+                        class="space-y-1"
+                    >
+                        <Link
+                            v-for="item in section.items"
+                            :key="item.href"
+                            :href="item.href"
+                            :data-tour="item.tour"
+                            :class="
+                                active(item.href)
+                                    ? 'bg-white text-slate-950'
+                                    : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                            "
+                            class="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            <span
+                                class="w-6 text-center text-lg"
+                                aria-hidden="true"
+                                >{{ item.icon }}</span
+                            >
+                            <span>{{ item.label }}</span>
+                        </Link>
+                    </div>
+                </div>
             </nav>
             <div class="shrink-0 border-t border-white/10 p-3">
                 <button
@@ -557,21 +765,28 @@ const logout = async () => {
                         />
                     </button>
                     <div class="flex min-w-0 flex-1 items-center gap-2">
-                        <select
+                        <label
                             v-if="tenant.organizations?.length"
-                            :value="tenant.organization?.id"
-                            class="selector"
-                            :aria-label="t('organization')"
-                            @change="switchOrganization"
+                            class="min-w-0"
                         >
-                            <option
-                                v-for="org in tenant.organizations"
-                                :key="org.id"
-                                :value="org.id"
+                            <span
+                                class="block text-[10px] font-bold uppercase tracking-wide text-slate-500"
+                                >{{ t("organization") }}</span
                             >
-                                {{ org.name }}
-                            </option>
-                        </select>
+                            <select
+                                :value="tenant.organization?.id"
+                                class="selector"
+                                @change="switchOrganization"
+                            >
+                                <option
+                                    v-for="org in tenant.organizations"
+                                    :key="org.id"
+                                    :value="org.id"
+                                >
+                                    {{ org.name }}
+                                </option>
+                            </select>
+                        </label>
                         <span class="text-slate-300">/</span>
                         <img
                             v-if="tenant.residence?.logo_url"
@@ -584,25 +799,30 @@ const logout = async () => {
                             class="grid size-8 place-items-center rounded-lg bg-teal-100 text-xs font-black text-teal-800"
                             >{{ tenant.residence.initials }}</span
                         >
-                        <select
-                            v-if="tenant.residences?.length"
-                            :value="tenant.residence?.id"
-                            class="selector"
-                            :aria-label="t('residence')"
-                            @change="switchResidence"
-                        >
-                            <option value="">{{ t("residence") }}</option>
-                            <option
-                                v-for="res in tenant.residences"
-                                :key="res.id"
-                                :value="res.id"
+                        <label v-if="tenant.residences?.length" class="min-w-0">
+                            <span
+                                class="block text-[10px] font-bold uppercase tracking-wide text-slate-500"
+                                >{{ t("residence") }}</span
                             >
-                                {{ res.name }}
-                            </option>
-                        </select>
+                            <select
+                                :value="tenant.residence?.id"
+                                class="selector"
+                                @change="switchResidence"
+                            >
+                                <option value="">{{ t("residence") }}</option>
+                                <option
+                                    v-for="res in tenant.residences"
+                                    :key="res.id"
+                                    :value="res.id"
+                                >
+                                    {{ res.name }}
+                                </option>
+                            </select>
+                        </label>
                     </div>
                     <Link
                         :href="route('profile.edit')"
+                        data-tour="profile"
                         class="grid size-11 place-items-center rounded-full bg-teal-50 font-semibold text-teal-800"
                         >{{
                             page.props.auth.user.name.slice(0, 2).toUpperCase()
@@ -670,5 +890,11 @@ const logout = async () => {
                 }}</span></Link
             >
         </nav>
+        <GuidedSetupTour
+            v-if="tenant.organization && !isResident"
+            :organization-id="tenant.organization.id"
+            :organization-created-at="tenant.organization.created_at"
+            :user-id="page.props.auth.user.id"
+        />
     </div>
 </template>

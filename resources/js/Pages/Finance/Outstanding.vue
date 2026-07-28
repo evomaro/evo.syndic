@@ -5,14 +5,10 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import FinanceNav from "@/Components/FinanceNav.vue";
 import Pagination from "@/Components/Pagination.vue";
 import { useI18n } from "@/i18n";
+import { formatMADCents as money } from "@/Support/money";
 const p = defineProps<{ charges: any; buildings: any[]; filters: any }>();
 const { t, locale } = useI18n();
 const f = reactive({ ...p.filters });
-const money = (c: number) =>
-    new Intl.NumberFormat(locale.value === "ar" ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(c / 100);
 </script>
 <template>
     <AuthenticatedLayout :title="t('outstanding')"

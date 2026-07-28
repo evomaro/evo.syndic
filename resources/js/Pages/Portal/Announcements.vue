@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useForm, router } from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import EmptyState from "@/Components/EmptyState.vue";
 defineProps<{ announcements: any; lots: any[]; documents: any[] }>();
 const form = useForm<any>({
     title_fr: "",
@@ -20,6 +21,7 @@ const form = useForm<any>({
         subtitle="Communications ciblées aux copropriétaires"
         ><div class="grid gap-5 xl:grid-cols-[400px_1fr]">
             <form
+                id="announcement-create"
                 class="panel grid h-fit gap-3 p-5"
                 @submit.prevent="
                     form.post(route('announcements.store'), {
@@ -100,6 +102,15 @@ const form = useForm<any>({
                         Publier maintenant
                     </button>
                 </article>
+                <EmptyState
+                    v-if="!announcements.data.length"
+                    title="Aucune annonce"
+                    message="Créez une annonce pour informer tous les résidents ou seulement certains lots."
+                    primary-label="Créer une annonce"
+                    primary-href="#announcement-create"
+                >
+                    <template #icon>◉</template>
+                </EmptyState>
             </div>
         </div></AuthenticatedLayout
     >

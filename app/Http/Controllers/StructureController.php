@@ -18,9 +18,17 @@ class StructureController extends Controller
     public function index(Request $r, TenantContext $c)
     {
         $res = $c->residence();
-        $lots = $res->lots()->with(['building:id,name', 'entrance:id,name', 'floor:id,name'])->when($r->search, fn ($q, $v) => $q->where(fn ($x) => $x->where('reference', 'like', "%$v%")->orWhere('lot_number', 'like', "%$v%")))->when($r->type, fn ($q, $v) => $q->where('type', $v))->when($r->building_id, fn ($q, $v) => $q->where('building_id', $v))->paginate(20)->withQueryString();
+        $lots = $res->lots()
+            ->with(['building:id,name', 'entrance:id,name', 'floor:id,name'])
+            ->when($r->search, fn ($q, $v) => $q->where(fn ($x) => $x->where('reference', 'like', "%$v%")->orWhere('lot_number', 'like', "%$v%")))
+            ->when($r->type, fn ($q, $v) => $q->where('type', $v))
+            ->when($r->building_id, fn ($q, $v) => $q->where('building_id', $v))
+            ->when($r->status === 'vacant', fn ($q) => $q->where('occupancy_status', 'vacant'))
+            ->when($r->status === 'missing_owner', fn ($q) => $q->whereDoesntHave('activeOwnerships'))
+            ->paginate(20)
+            ->withQueryString();
 
-        return Inertia::render('Structure/Index', ['buildings' => $res->buildings()->with(['entrances', 'floors'])->orderBy('sort_order')->get(), 'lots' => $lots, 'filters' => $r->only(['search', 'type', 'building_id'])]);
+        return Inertia::render('Structure/Index', ['buildings' => $res->buildings()->with(['entrances', 'floors'])->orderBy('sort_order')->get(), 'lots' => $lots, 'filters' => $r->only(['search', 'type', 'building_id', 'status'])]);
     }
 
     public function building(Request $r, TenantContext $c)

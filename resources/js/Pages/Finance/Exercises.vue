@@ -3,6 +3,8 @@ import { useForm } from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import FinanceNav from "@/Components/FinanceNav.vue";
 import { useI18n } from "@/i18n";
+import InfoTooltip from "@/Components/InfoTooltip.vue";
+import { ref } from "vue";
 defineProps<{ exercises: any[] }>();
 const { t } = useI18n();
 const form = useForm({
@@ -11,6 +13,14 @@ const form = useForm({
     ends_on: "2026-12-31",
     notes: "",
 });
+const createStep = ref(1);
+const createExercise = () =>
+    form.post(route("financial-exercises.store"), {
+        onSuccess: () => {
+            form.reset();
+            createStep.value = 1;
+        },
+    });
 const transition = (id: number, action: string) => {
     const reason = action === "reopen" ? window.prompt(t("reason")) : "";
     useForm({ action, reason }).post(
@@ -21,32 +31,70 @@ const transition = (id: number, action: string) => {
 <template>
     <AuthenticatedLayout :title="t('exercises')"
         ><FinanceNav />
+        <p class="mb-5 text-sm text-slate-600">
+            {{ t("exercises") }}
+            <InfoTooltip term="accounting_period" />
+        </p>
         <div class="grid gap-5 xl:grid-cols-[360px_1fr]">
             <form
                 class="panel grid h-fit gap-3 p-5"
-                @submit.prevent="
-                    form.post(route('financial-exercises.store'), {
-                        onSuccess: () => form.reset(),
-                    })
-                "
+                @submit.prevent="createExercise"
             >
-                <h2 class="font-bold">{{ t("createExercise") }}</h2>
-                <label class="field"
+                <div class="flex items-center justify-between gap-3">
+                    <h2 class="font-bold">{{ t("createExercise") }}</h2>
+                    <span class="badge">{{ createStep }}/2</span>
+                </div>
+                <label v-if="createStep === 1" class="field"
                     ><span class="field-label">{{ t("name") }}</span
                     ><input v-model="form.name" required /></label
-                ><label class="field"
+                ><label v-if="createStep === 1" class="field"
                     ><span class="field-label">{{ t("startDate") }}</span
                     ><input
                         v-model="form.starts_on"
                         type="date"
                         required /></label
-                ><label class="field"
+                ><label v-if="createStep === 1" class="field"
                     ><span class="field-label">{{ t("endDate") }}</span
-                    ><input
-                        v-model="form.ends_on"
-                        type="date"
-                        required /></label
-                ><button class="btn-primary">{{ t("create") }}</button>
+                    ><input v-model="form.ends_on" type="date" required
+                /></label>
+                <div
+                    v-if="createStep === 2"
+                    class="rounded-xl bg-slate-50 p-4 text-sm"
+                >
+                    <p class="font-bold">{{ form.name }}</p>
+                    <p class="mt-1 text-slate-600">
+                        Du {{ form.starts_on }} au {{ form.ends_on }}.
+                    </p>
+                    <p class="mt-3 text-amber-800">
+                        L’exercice sera créé en brouillon. Son ouverture restera
+                        une action séparée.
+                    </p>
+                </div>
+                <div class="flex justify-between gap-2">
+                    <button
+                        v-if="createStep === 2"
+                        type="button"
+                        class="btn-secondary"
+                        @click="createStep = 1"
+                    >
+                        Modifier
+                    </button>
+                    <span v-else></span>
+                    <button
+                        v-if="createStep === 1"
+                        type="button"
+                        class="btn-primary"
+                        :disabled="
+                            !form.name || !form.starts_on || !form.ends_on
+                        "
+                        @click="createStep = 2"
+                    >
+                        Continuer
+                    </button>
+                    <button v-else class="btn-primary">
+                        Confirmer la création
+                    </button>
+                </div>
                 <p v-for="error in form.errors" class="text-sm text-red-600">
                     {{ error }}
                 </p>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, router, useForm, usePage } from "@inertiajs/vue3";
-import { computed, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
+import { formatMADCents as minorToMad } from "@/Support/money";
 
 const props = defineProps<{
     book: any | null;
@@ -25,8 +26,92 @@ const { book, frameworks, accounts, journals, exercises, entries, activity } =
 const permissions = computed(
     () => usePage<any>().props.auth?.permissions ?? [],
 );
+const advancedStorageKey = computed(
+    () =>
+        `evosyndic.accounting.advanced.${usePage<any>().props.auth?.user?.id ?? "anonymous"}`,
+);
+const advancedOpen = ref(false);
+onMounted(() => {
+    advancedOpen.value =
+        window.localStorage.getItem(advancedStorageKey.value) === "open";
+});
+watch(advancedOpen, (open) =>
+    window.localStorage.setItem(
+        advancedStorageKey.value,
+        open ? "open" : "closed",
+    ),
+);
 const isAr = computed(() => usePage<any>().props.locale === "ar");
 const l = (fr: string, ar: string) => (isAr.value ? ar : fr);
+const statusLabels: Record<string, [string, string]> = {
+    approved: ["Approuvé", "معتمد"],
+    pending: ["En attente", "قيد الانتظار"],
+    draft: ["Brouillon", "مسودة"],
+    active: ["Actif", "مفعل"],
+    inactive: ["Inactif", "غير مفعل"],
+    validated: ["Validé", "مصادق عليه"],
+    posted: ["Comptabilisé", "مرحّل"],
+    reversed: ["Extourné", "معكوس"],
+    reviewed: ["Vérifié", "تمت مراجعته"],
+    pending_professional_review: [
+        "Revue d’un comptable requise",
+        "مراجعة محاسب مطلوبة",
+    ],
+};
+const statusLabel = (value?: string) => {
+    if (!value) return "—";
+    if (statusLabels[value]) return l(...statusLabels[value]);
+    const readable = value.replaceAll("_", " ");
+    return readable.charAt(0).toUpperCase() + readable.slice(1);
+};
+const readinessIssueLabels: Record<string, [string, string]> = {
+    book_professional_review_missing: [
+        "La configuration doit être validée par un comptable agréé.",
+        "يجب اعتماد الإعداد من طرف محاسب معتمد.",
+    ],
+    confirmed_open_exercise_missing: [
+        "Ouvrez et confirmez un exercice comptable.",
+        "افتحوا وأكدوا سنة محاسبية.",
+    ],
+    active_rules_missing: [
+        "Activez au moins une règle d’automatisation vérifiée.",
+        "فعّلوا قاعدة أتمتة واحدة على الأقل بعد مراجعتها.",
+    ],
+};
+const readinessIssueLabel = (value: string) =>
+    readinessIssueLabels[value]
+        ? l(...readinessIssueLabels[value])
+        : statusLabel(value);
+const sourceLabels: Record<string, [string, string]> = {
+    fund_call: ["Appel de fonds", "طلب مساهمة"],
+    payment: ["Encaissement", "تحصيل"],
+    payment_allocation: ["Affectation d’un encaissement", "تخصيص تحصيل"],
+    supplier_invoice: ["Facture fournisseur", "فاتورة مورد"],
+    supplier_credit_note: ["Avoir fournisseur", "إشعار دائن للمورد"],
+    supplier_settlement: ["Règlement fournisseur", "أداء المورد"],
+};
+const sourceLabel = (value: string) =>
+    sourceLabels[value] ? l(...sourceLabels[value]) : statusLabel(value);
+const resolutionLabels: Record<string, [string, string]> = {
+    fixed_account: ["Compte comptable défini", "حساب محاسبي محدد"],
+    financial_account: ["Selon le compte financier", "حسب الحساب المالي"],
+    expense_category: ["Selon la catégorie de dépense", "حسب فئة المصروف"],
+    charge_category: ["Selon la catégorie d’appel", "حسب فئة المساهمة"],
+    payment_split: ["Selon l’affectation du paiement", "حسب توزيع الأداء"],
+    receivable_control: [
+        "Compte collectif des copropriétaires",
+        "حساب الملاك الجماعي",
+    ],
+    advance_control: ["Compte des avances", "حساب التسبيقات"],
+    supplier_payable: [
+        "Compte collectif des fournisseurs",
+        "حساب الموردين الجماعي",
+    ],
+};
+const resolutionLabel = (value: string) =>
+    resolutionLabels[value]
+        ? l(...resolutionLabels[value])
+        : statusLabel(value);
 const adoption = useForm({
     accounting_framework_id: props.frameworks?.[0]?.id ?? "",
     selected_regime: "full",
@@ -68,11 +153,6 @@ const credit = computed(() =>
 const selectedExercise = computed(() =>
     props.exercises?.find((x: any) => x.id == entry.financial_exercise_id),
 );
-const minorToMad = (value: number) =>
-    new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: "MAD",
-    }).format(value / 100);
 const addLine = () =>
     entry.lines.push({
         ledger_account_id: "",
@@ -128,7 +208,7 @@ const regimeAssessment = useForm<any>({
     recommended_regime: props.book?.selected_regime ?? "full",
     inputs: { assessment_basis: "explicit_user_input" },
     reason_codes: ["user_declared_regime"],
-    rule_version: "manual-1",
+    rule_version: "regime-2026.1",
 });
 const frameworkSuccessor = useForm({
     version: "",
@@ -151,6 +231,8 @@ const journal = useForm({
     effective_from: new Date().toISOString().slice(0, 10),
 });
 const activationConfirmation = ref(false);
+const entryConfirmation = ref(false);
+const entryStep = ref(1);
 const mappingOptions = computed(() => {
     if (mappingForm.mapping_type === "financial_account")
         return props.mappingSources?.financial_accounts ?? [];
@@ -181,6 +263,10 @@ const openCredit = computed(() =>
 const confirmActivation = () => {
     activationConfirmation.value = false;
     activationForm.post(route("accounting.automation.activate"));
+};
+const submitEntry = () => {
+    entryConfirmation.value = false;
+    entry.post(route("accounting.entries.store"));
 };
 </script>
 
@@ -280,7 +366,9 @@ const confirmActivation = () => {
                         <p class="text-xs uppercase text-amber-700">
                             {{ l("Revue professionnelle", "المراجعة المهنية") }}
                         </p>
-                        <p class="mt-2 font-bold">{{ book.review_status }}</p>
+                        <p class="mt-2 font-bold">
+                            {{ statusLabel(book.review_status) }}
+                        </p>
                         <button
                             v-if="
                                 book.review_status !== 'approved' &&
@@ -316,7 +404,7 @@ const confirmActivation = () => {
                             <h2 class="font-bold">
                                 {{
                                     l(
-                                        "Évaluation explicite du régime",
+                                        "Validation du régime comptable",
                                         "تقييم صريح للنظام",
                                     )
                                 }}
@@ -324,7 +412,7 @@ const confirmActivation = () => {
                             <p class="text-sm text-slate-600">
                                 {{
                                     l(
-                                        "La recommandation reste en attente d’une revue professionnelle.",
+                                        "Choisissez le régime applicable. La décision devra ensuite être validée par un comptable agréé.",
                                         "تبقى التوصية في انتظار مراجعة مهنية.",
                                     )
                                 }}
@@ -349,7 +437,9 @@ const confirmActivation = () => {
                             v-model="regimeAssessment.recommended_regime"
                             class="w-full rounded-xl border-slate-300"
                         >
-                            <option value="full">{{ l("Complet", "كامل") }}</option>
+                            <option value="full">
+                                {{ l("Complet", "كامل") }}
+                            </option>
                             <option value="simplified">
                                 {{ l("Simplifié", "مبسط") }}
                             </option>
@@ -359,9 +449,7 @@ const confirmActivation = () => {
                         </select>
                         <input
                             v-model="regimeAssessment.rule_version"
-                            required
-                            class="w-full rounded-xl border-slate-300"
-                            :placeholder="l('Version de règle', 'نسخة القاعدة')"
+                            type="hidden"
                         />
                         <button
                             class="min-h-11 w-full rounded-xl bg-teal-700 px-4 text-white"
@@ -384,7 +472,7 @@ const confirmActivation = () => {
                             <h2 class="font-bold">
                                 {{
                                     l(
-                                        "Successeur du référentiel",
+                                        "Préparer une nouvelle version du référentiel",
                                         "خَلَف المرجع المحاسبي",
                                     )
                                 }}
@@ -402,7 +490,9 @@ const confirmActivation = () => {
                             v-model="frameworkSuccessor.version"
                             required
                             class="w-full rounded-xl border-slate-300"
-                            :placeholder="l('Nouvelle version', 'النسخة الجديدة')"
+                            :placeholder="
+                                l('Nouvelle version', 'النسخة الجديدة')
+                            "
                         />
                         <input
                             v-model="frameworkSuccessor.effective_date"
@@ -412,20 +502,35 @@ const confirmActivation = () => {
                         <button
                             class="min-h-11 w-full rounded-xl border border-teal-700 px-4 text-teal-800"
                         >
-                            {{ l("Créer le brouillon lié", "إنشاء المسودة المرتبطة") }}
+                            {{
+                                l(
+                                    "Créer le brouillon lié",
+                                    "إنشاء المسودة المرتبطة",
+                                )
+                            }}
                         </button>
                     </form>
                 </section>
 
-                <section
+                <details
                     id="automation"
                     class="min-w-0 rounded-2xl border border-teal-200 bg-white p-5"
+                    :open="advancedOpen"
+                    @toggle="
+                        advancedOpen = ($event.target as HTMLDetailsElement)
+                            .open
+                    "
                 >
-                    <div
-                        class="flex flex-wrap items-start justify-between gap-3"
+                    <summary
+                        class="flex min-h-12 cursor-pointer list-none flex-wrap items-center justify-between gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600"
                     >
                         <div>
-                            <h2 class="text-lg font-bold">
+                            <p
+                                class="text-xs font-bold uppercase tracking-wider text-teal-700"
+                            >
+                                {{ l("Options avancées", "الخيارات المتقدمة") }}
+                            </p>
+                            <h2 class="mt-1 text-lg font-bold">
                                 {{
                                     l(
                                         "Automatisation comptable",
@@ -442,25 +547,36 @@ const confirmActivation = () => {
                                 }}
                             </p>
                         </div>
-                        <span
-                            class="rounded-full px-3 py-1 text-sm font-semibold"
-                            :class="
-                                automation?.status === 'active'
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : 'bg-slate-100 text-slate-700'
-                            "
-                        >
-                            {{
-                                automation?.status === "active"
-                                    ? l("Active", "مفعلة")
-                                    : l("Non activée", "غير مفعلة")
-                            }}
+                        <span class="flex items-center gap-3">
+                            <span
+                                class="rounded-full px-3 py-1 text-sm font-semibold"
+                                :class="
+                                    automation?.status === 'active'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : 'bg-slate-100 text-slate-700'
+                                "
+                            >
+                                {{
+                                    automation?.status === "active"
+                                        ? l("Active", "مفعلة")
+                                        : l("Non activée", "غير مفعلة")
+                                }}
+                            </span>
+                            <span
+                                class="text-xl text-slate-400 transition"
+                                :class="advancedOpen ? 'rotate-90' : ''"
+                                aria-hidden="true"
+                                >›</span
+                            >
                         </span>
-                    </div>
+                    </summary>
                     <div class="mt-4 grid gap-4 lg:grid-cols-2">
                         <div class="rounded-xl bg-slate-50 p-4">
                             <b>{{
-                                l("Contrôle de préparation", "فحص الجاهزية")
+                                l(
+                                    "Vérification avant activation",
+                                    "فحص الجاهزية",
+                                )
                             }}</b>
                             <p
                                 class="mt-2 text-sm"
@@ -489,7 +605,7 @@ const confirmActivation = () => {
                                     v-for="issue in automationReadiness?.issues"
                                     :key="issue"
                                 >
-                                    {{ issue }}
+                                    {{ readinessIssueLabel(issue) }}
                                 </li>
                             </ul>
                         </div>
@@ -550,9 +666,12 @@ const confirmActivation = () => {
                                             {{ ruleItem.version }}</b
                                         >
                                         <span
-                                            >{{ ruleItem.status }} /
+                                            >{{ statusLabel(ruleItem.status) }}
+                                            /
                                             {{
-                                                ruleItem.professional_review_status
+                                                statusLabel(
+                                                    ruleItem.professional_review_status,
+                                                )
                                             }}</span
                                         >
                                     </div>
@@ -647,19 +766,25 @@ const confirmActivation = () => {
                                     v-model="ruleForm.source_domain"
                                     class="rounded-lg border-slate-300"
                                 >
-                                    <option value="fund_call">fund_call</option>
-                                    <option value="payment">payment</option>
+                                    <option value="fund_call">
+                                        {{ sourceLabel("fund_call") }}
+                                    </option>
+                                    <option value="payment">
+                                        {{ sourceLabel("payment") }}
+                                    </option>
                                     <option value="payment_allocation">
-                                        payment_allocation
+                                        {{ sourceLabel("payment_allocation") }}
                                     </option>
                                     <option value="supplier_invoice">
-                                        supplier_invoice
+                                        {{ sourceLabel("supplier_invoice") }}
                                     </option>
                                     <option value="supplier_credit_note">
-                                        supplier_credit_note
+                                        {{
+                                            sourceLabel("supplier_credit_note")
+                                        }}
                                     </option>
                                     <option value="supplier_settlement">
-                                        supplier_settlement
+                                        {{ sourceLabel("supplier_settlement") }}
                                     </option>
                                 </select>
                                 <input
@@ -706,7 +831,7 @@ const confirmActivation = () => {
                                         :key="mode"
                                         :value="mode"
                                     >
-                                        Débit · {{ mode }}
+                                        Débit · {{ resolutionLabel(mode) }}
                                     </option>
                                 </select>
                                 <select
@@ -727,7 +852,7 @@ const confirmActivation = () => {
                                         :key="mode"
                                         :value="mode"
                                     >
-                                        Crédit · {{ mode }}
+                                        Crédit · {{ resolutionLabel(mode) }}
                                     </option>
                                 </select>
                                 <select
@@ -798,13 +923,18 @@ const confirmActivation = () => {
                                         class="flex flex-wrap justify-between gap-2"
                                     >
                                         <span
-                                            >{{ map.mapping_type }}:{{
-                                                map.source_id
+                                            >{{
+                                                resolutionLabel(
+                                                    map.mapping_type,
+                                                )
                                             }}
+                                            · {{ map.source_id }}
                                             →
                                             <b>{{ map.account?.code }}</b></span
                                         >
-                                        <span>{{ map.review_status }}</span>
+                                        <span>{{
+                                            statusLabel(map.review_status)
+                                        }}</span>
                                     </div>
                                     <button
                                         v-if="
@@ -915,7 +1045,7 @@ const confirmActivation = () => {
                             </form>
                         </div>
                     </div>
-                </section>
+                </details>
 
                 <section class="rounded-2xl border bg-white p-5">
                     <h2 class="text-lg font-bold">
@@ -928,12 +1058,15 @@ const confirmActivation = () => {
                             class="flex flex-wrap items-center justify-between gap-2 rounded-xl border p-3 text-sm"
                         >
                             <span
-                                >{{ postingItem.source_type }} #{{
+                                >{{ sourceLabel(postingItem.source_type) }} #{{
                                     postingItem.source_id
                                 }}
-                                · {{ postingItem.source_event }}</span
+                                ·
+                                {{
+                                    statusLabel(postingItem.source_event)
+                                }}</span
                             >
-                            <span>{{ postingItem.status }}</span>
+                            <span>{{ statusLabel(postingItem.status) }}</span>
                             <Link
                                 v-if="postingItem.entry"
                                 :href="
@@ -986,7 +1119,7 @@ const confirmActivation = () => {
                         >
                             <div class="flex flex-wrap justify-between gap-2">
                                 <b>{{ batch.reference }}</b
-                                ><span>{{ batch.status }}</span>
+                                ><span>{{ statusLabel(batch.status) }}</span>
                             </div>
                             <div class="mt-2 flex gap-2">
                                 <button
@@ -1334,7 +1467,9 @@ const confirmActivation = () => {
                         v-if="permissions.includes('manage_chart_of_accounts')"
                         class="mt-4 grid gap-2 border-t pt-4 sm:grid-cols-2 lg:grid-cols-4"
                         @submit.prevent="
-                            subaccount.post(route('accounting.subaccounts.store'))
+                            subaccount.post(
+                                route('accounting.subaccounts.store'),
+                            )
                         "
                     >
                         <select
@@ -1363,7 +1498,9 @@ const confirmActivation = () => {
                             v-model="subaccount.label_fr"
                             required
                             class="rounded-xl border-slate-300"
-                            :placeholder="l('Libellé français', 'التسمية الفرنسية')"
+                            :placeholder="
+                                l('Libellé français', 'التسمية الفرنسية')
+                            "
                         />
                         <input
                             v-model="subaccount.label_ar"
@@ -1373,7 +1510,9 @@ const confirmActivation = () => {
                         <button
                             class="min-h-11 rounded-xl bg-teal-700 px-4 text-white sm:col-span-2 lg:col-span-4"
                         >
-                            {{ l("Créer le sous-compte", "إنشاء الحساب الفرعي") }}
+                            {{
+                                l("Créer le sous-compte", "إنشاء الحساب الفرعي")
+                            }}
                         </button>
                     </form>
                 </section>
@@ -1411,7 +1550,9 @@ const confirmActivation = () => {
                             v-model="journal.label_fr"
                             required
                             class="rounded-xl border-slate-300"
-                            :placeholder="l('Libellé français', 'التسمية الفرنسية')"
+                            :placeholder="
+                                l('Libellé français', 'التسمية الفرنسية')
+                            "
                         />
                         <input
                             v-model="journal.label_ar"
@@ -1447,11 +1588,36 @@ const confirmActivation = () => {
                     </h2>
                     <form
                         class="mt-4 space-y-4"
-                        @submit.prevent="
-                            entry.post(route('accounting.entries.store'))
-                        "
+                        @submit.prevent="entryConfirmation = true"
                     >
-                        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div
+                            class="grid grid-cols-2 overflow-hidden rounded-xl border text-center text-sm font-semibold"
+                        >
+                            <div
+                                class="px-3 py-2"
+                                :class="
+                                    entryStep === 1
+                                        ? 'bg-teal-700 text-white'
+                                        : 'bg-teal-50 text-teal-800'
+                                "
+                            >
+                                1. Contexte
+                            </div>
+                            <div
+                                class="px-3 py-2"
+                                :class="
+                                    entryStep === 2
+                                        ? 'bg-teal-700 text-white'
+                                        : 'text-slate-400'
+                                "
+                            >
+                                2. Lignes et contrôle
+                            </div>
+                        </div>
+                        <div
+                            v-show="entryStep === 1"
+                            class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+                        >
                             <select
                                 v-model="entry.financial_exercise_id"
                                 required
@@ -1504,7 +1670,10 @@ const confirmActivation = () => {
                                 class="rounded-xl border-slate-300"
                             />
                         </div>
-                        <div class="grid gap-3 sm:grid-cols-2">
+                        <div
+                            v-show="entryStep === 1"
+                            class="grid gap-3 sm:grid-cols-2"
+                        >
                             <input
                                 v-model="entry.reference"
                                 placeholder="Référence"
@@ -1516,7 +1685,7 @@ const confirmActivation = () => {
                                 class="rounded-xl border-slate-300"
                             />
                         </div>
-                        <div class="overflow-x-auto">
+                        <div v-show="entryStep === 2" class="overflow-x-auto">
                             <table class="min-w-[720px] w-full text-sm">
                                 <thead>
                                     <tr>
@@ -1594,15 +1763,25 @@ const confirmActivation = () => {
                             </table>
                         </div>
                         <div
+                            v-show="entryStep === 2"
                             class="flex flex-wrap items-center justify-between gap-3"
                         >
-                            <button
-                                type="button"
-                                class="rounded-lg border px-3 py-2"
-                                @click="addLine"
-                            >
-                                {{ l("Ajouter une ligne", "إضافة سطر") }}
-                            </button>
+                            <div class="flex gap-2">
+                                <button
+                                    type="button"
+                                    class="rounded-lg border px-3 py-2"
+                                    @click="entryStep = 1"
+                                >
+                                    {{ l("Précédent", "السابق") }}
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rounded-lg border px-3 py-2"
+                                    @click="addLine"
+                                >
+                                    {{ l("Ajouter une ligne", "إضافة سطر") }}
+                                </button>
+                            </div>
                             <div class="text-sm">
                                 <b>Débit {{ minorToMad(debit) }}</b> ·
                                 <b>Crédit {{ minorToMad(credit) }}</b>
@@ -1618,6 +1797,22 @@ const confirmActivation = () => {
                                 {{
                                     l("Enregistrer le brouillon", "حفظ المسودة")
                                 }}
+                            </button>
+                        </div>
+                        <div v-if="entryStep === 1" class="flex justify-end">
+                            <button
+                                type="button"
+                                class="btn-primary"
+                                :disabled="
+                                    !entry.financial_exercise_id ||
+                                    !entry.accounting_period_id ||
+                                    !entry.accounting_journal_id ||
+                                    !entry.entry_date ||
+                                    !entry.description_fr
+                                "
+                                @click="entryStep = 2"
+                            >
+                                {{ l("Continuer", "متابعة") }}
                             </button>
                         </div>
                     </form>
@@ -1640,7 +1835,7 @@ const confirmActivation = () => {
                                 — {{ item.description_fr }}</span
                             ><span
                                 class="rounded-full bg-slate-100 px-2 py-1 text-xs"
-                                >{{ item.status }}</span
+                                >{{ statusLabel(item.status) }}</span
                             ></Link
                         >
                     </div>
@@ -1666,6 +1861,58 @@ const confirmActivation = () => {
                     </div>
                 </section>
             </template>
+        </div>
+        <div
+            v-if="entryConfirmation"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="entry-confirmation-title"
+            class="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4"
+            @keydown.esc="entryConfirmation = false"
+        >
+            <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+                <p
+                    class="text-xs font-bold uppercase tracking-wider text-teal-700"
+                >
+                    {{ l("Vérification finale", "المراجعة النهائية") }}
+                </p>
+                <h2
+                    id="entry-confirmation-title"
+                    class="mt-1 text-xl font-bold"
+                >
+                    {{
+                        l(
+                            "Confirmer l’écriture comptable",
+                            "تأكيد القيد المحاسبي",
+                        )
+                    }}
+                </h2>
+                <p class="mt-3 text-sm leading-6 text-slate-600">
+                    {{
+                        l(
+                            `Une écriture équilibrée de ${minorToMad(debit)} sera créée dans le journal sélectionné à la date du ${entry.entry_date}. Elle restera en brouillon jusqu’à sa comptabilisation.`,
+                            `سيتم إنشاء قيد متوازن بقيمة ${minorToMad(debit)} في اليومية المحددة بتاريخ ${entry.entry_date}. سيبقى مسودة إلى حين ترحيله.`,
+                        )
+                    }}
+                </p>
+                <div class="mt-5 flex justify-end gap-3">
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        @click="entryConfirmation = false"
+                    >
+                        {{ l("Modifier", "تعديل") }}
+                    </button>
+                    <button
+                        type="button"
+                        class="btn-primary"
+                        :disabled="entry.processing"
+                        @click="submitEntry"
+                    >
+                        {{ l("Confirmer la création", "تأكيد الإنشاء") }}
+                    </button>
+                </div>
+            </div>
         </div>
         <div
             v-if="activationConfirmation"

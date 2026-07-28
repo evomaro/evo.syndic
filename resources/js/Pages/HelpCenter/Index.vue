@@ -74,6 +74,7 @@ const ui = computed(() =>
               result: "النتيجة المتوقعة",
               mistakes: "أخطاء شائعة",
               unlocks: "ما يصبح متاحا",
+              tour: "إعادة الجولة الإرشادية",
           }
         : {
               title: "Centre d’aide",
@@ -105,6 +106,7 @@ const ui = computed(() =>
               result: "Résultat attendu",
               mistakes: "Erreurs fréquentes",
               unlocks: "Disponible ensuite",
+              tour: "Revoir la visite guidée",
           },
 );
 
@@ -228,6 +230,8 @@ const toggleStep = (step: ChecklistStep) => {
 const resetProgress = () =>
     router.delete(route("help.progress.reset"), { preserveScroll: true });
 const printPage = () => window.print();
+const restartTour = () =>
+    window.dispatchEvent(new CustomEvent("evosyndic:tour:start"));
 
 watch(
     () => props.selectedArticleId,
@@ -238,6 +242,13 @@ watch(
 <template>
     <AuthenticatedLayout :title="ui.title" :subtitle="ui.intro">
         <template #actions>
+            <button
+                type="button"
+                class="print:hidden inline-flex min-h-10 items-center rounded-xl border border-teal-200 bg-teal-50 px-4 text-sm font-semibold text-teal-800 hover:bg-teal-100"
+                @click="restartTour"
+            >
+                {{ ui.tour }}
+            </button>
             <button
                 type="button"
                 class="print:hidden inline-flex min-h-10 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold hover:bg-slate-50"

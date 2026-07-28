@@ -2,15 +2,12 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ExpenseNavigation from "@/Components/Expenses/ExpenseNavigation.vue";
 import BudgetMetricGrid from "@/Components/Expenses/BudgetMetricGrid.vue";
+import EmptyState from "@/Components/EmptyState.vue";
+import { formatMADCents as money } from "@/Support/money";
 import { useI18n } from "@/i18n";
 defineProps<{ metrics: any; activeBudget?: any; budgetMetrics: any }>();
 const { locale } = useI18n();
 const text = (fr: string, ar: string) => (locale.value === "ar" ? ar : fr);
-const money = (v: number) =>
-    new Intl.NumberFormat(locale.value === "ar" ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format((v || 0) / 100);
 </script>
 <template>
     <AuthenticatedLayout
@@ -48,14 +45,20 @@ const money = (v: number) =>
                 {{ text("Budget actif", "الميزانية النشطة") }}
             </h2>
             <BudgetMetricGrid v-if="activeBudget" :metrics="budgetMetrics" />
-            <p v-else class="panel p-6 text-slate-500">
-                {{
+            <EmptyState
+                v-else
+                :title="text('Aucun budget approuvé', 'لا توجد ميزانية معتمدة')"
+                :message="
                     text(
-                        "Aucun budget approuvé pour cette résidence.",
-                        "لا توجد ميزانية معتمدة لهذه الإقامة.",
+                        'Créez un budget pour suivre les engagements, les dépenses réelles et le disponible.',
+                        'أنشئوا ميزانية لتتبع الالتزامات والمصاريف الفعلية والمتاح.',
                     )
-                }}
-            </p>
+                "
+                :primary-label="text('Créer un budget', 'إنشاء ميزانية')"
+                :primary-href="route('budgets.create')"
+            >
+                <template #icon>▤</template>
+            </EmptyState>
         </section></AuthenticatedLayout
     >
 </template>

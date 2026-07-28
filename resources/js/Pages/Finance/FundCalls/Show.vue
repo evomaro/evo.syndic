@@ -5,15 +5,11 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import FinanceNav from "@/Components/FinanceNav.vue";
 import AccountingPostingStatus from "@/Components/AccountingPostingStatus.vue";
 import { useI18n } from "@/i18n";
+import { formatMADCents as money } from "@/Support/money";
 const p = defineProps<{ call: any; preview: any[]; accountingPosting: any }>();
 const { t, locale } = useI18n();
 const reason = ref("");
 const cancelForm = useForm({ reason: "" });
-const money = (c: number) =>
-    new Intl.NumberFormat(locale.value === "ar" ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(c / 100);
 const validateCall = () =>
     useForm({}).post(route("fund-calls.validate", p.call.id));
 const cancelCall = () => {

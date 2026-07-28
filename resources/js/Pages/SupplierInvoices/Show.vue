@@ -6,17 +6,13 @@ import ExpenseNavigation from "@/Components/Expenses/ExpenseNavigation.vue";
 import FinancialStatusBadge from "@/Components/Expenses/FinancialStatusBadge.vue";
 import FinancialConfirmationPanel from "@/Components/Expenses/FinancialConfirmationPanel.vue";
 import AccountingPostingStatus from "@/Components/AccountingPostingStatus.vue";
+import { formatMADCents as money } from "@/Support/money";
 const props = defineProps<{ invoice: any; accountingPosting: any }>();
 const attachment = ref<File | null>(null);
 const kind = ref("original");
 const hasOriginal = computed(() =>
     props.invoice.attachments?.some((item: any) => item.kind === "original"),
 );
-const money = (cents: number) =>
-    new Intl.NumberFormat("fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(Number(cents || 0) / 100);
 const upload = () => {
     if (!attachment.value) return;
     const data = new FormData();

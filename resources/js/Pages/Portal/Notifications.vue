@@ -2,6 +2,7 @@
 import { useForm, router } from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { useI18n } from "@/i18n";
+import EmptyState from "@/Components/EmptyState.vue";
 const props = defineProps<{
     notifications: any;
     unreadCount: number;
@@ -48,14 +49,25 @@ const formatDate = (value: string) =>
                     </p>
                     <small>{{ formatDate(n.created_at) }}</small>
                 </button>
-                <p
+                <EmptyState
                     v-if="!notifications.data.length"
-                    class="panel p-8 text-center text-slate-500"
+                    :title="text('Aucune notification', 'لا توجد إشعارات')"
+                    :message="
+                        text(
+                            'Vous êtes à jour. Vous pouvez vérifier vos préférences de notification.',
+                            'أنتم على اطلاع. يمكنكم التحقق من تفضيلات الإشعارات.',
+                        )
+                    "
+                    :primary-label="
+                        text('Configurer les préférences', 'إعداد التفضيلات')
+                    "
+                    primary-href="#notification-settings"
                 >
-                    {{ text("Aucune notification", "لا توجد إشعارات") }}
-                </p>
+                    <template #icon>♢</template>
+                </EmptyState>
             </div>
             <form
+                id="notification-settings"
                 class="panel grid h-fit gap-4 p-5"
                 @submit.prevent="form.put(route('notifications.preferences'))"
             >

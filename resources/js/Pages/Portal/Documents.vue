@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useForm, router } from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import EmptyState from "@/Components/EmptyState.vue";
 defineProps<{ documents: any; lots: any[] }>();
 const form = useForm<any>({
     title: "",
@@ -17,6 +18,7 @@ const form = useForm<any>({
         subtitle="Fichiers privés, versionnés et publiés selon leur audience"
         ><div class="grid gap-5 xl:grid-cols-[380px_1fr]">
             <form
+                id="document-upload"
                 class="panel grid h-fit gap-3 p-5"
                 @submit.prevent="
                     form.post(route('documents.store'), {
@@ -102,12 +104,15 @@ const form = useForm<any>({
                         </button>
                     </div>
                 </article>
-                <p
+                <EmptyState
                     v-if="!documents.data.length"
-                    class="panel p-8 text-center text-slate-500"
+                    title="Aucun document"
+                    message="Téléversez le premier document et choisissez précisément qui pourra le consulter."
+                    primary-label="Téléverser un document"
+                    primary-href="#document-upload"
                 >
-                    Aucun document
-                </p>
+                    <template #icon>▤</template>
+                </EmptyState>
             </div>
         </div></AuthenticatedLayout
     >

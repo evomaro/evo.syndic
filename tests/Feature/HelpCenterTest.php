@@ -149,6 +149,26 @@ class HelpCenterTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_dashboard_surfaces_the_next_incomplete_setup_step(): void
+    {
+        $context = $this->context();
+
+        $this->actingAs($context['user'])->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('nextSetupStep.id', 'setup-profile')
+                ->where('nextSetupStep.href', route('profile.edit'))
+                ->where('helpProgress.total', count(config('help_center.checklist'))));
+
+        $this->actingAs($context['user'])
+            ->put(route('help.progress', 'setup-profile'), ['complete' => true])
+            ->assertRedirect();
+
+        $this->actingAs($context['user'])->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('nextSetupStep.id', 'setup-structure')
+                ->where('nextSetupStep.href', route('structure.index')));
+    }
+
     public function test_contextual_route_mapping_and_arabic_search_metadata_are_present(): void
     {
         $context = $this->context('owner', 'ar');

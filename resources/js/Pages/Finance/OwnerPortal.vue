@@ -2,6 +2,7 @@
 import { Link } from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { useI18n } from "@/i18n";
+import { formatMADCents as money } from "@/Support/money";
 defineProps<{
     lots: any[];
     combinedBalanceCents: number;
@@ -9,11 +10,6 @@ defineProps<{
     availableCreditCents: number;
 }>();
 const { t, locale } = useI18n();
-const money = (c: number) =>
-    new Intl.NumberFormat(locale.value === "ar" ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(c / 100);
 </script>
 <template>
     <AuthenticatedLayout :title="t('finance')"

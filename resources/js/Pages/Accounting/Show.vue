@@ -2,6 +2,7 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, router, useForm, usePage } from "@inertiajs/vue3";
 import { computed, nextTick, ref } from "vue";
+import { formatMADCents as money } from "@/Support/money";
 const props = defineProps<{ entry: any }>();
 const { entry } = props;
 const permissions = computed(
@@ -9,11 +10,20 @@ const permissions = computed(
 );
 const isAr = computed(() => usePage<any>().props.locale === "ar");
 const l = (fr: string, ar: string) => (isAr.value ? ar : fr);
-const money = (v: number) =>
-    new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: "MAD",
-    }).format(v / 100);
+const entryStatus = computed(() => {
+    const labels: Record<string, [string, string]> = {
+        draft: ["Brouillon", "مسودة"],
+        validated: ["Validée", "مصادق عليها"],
+        posted: ["Comptabilisée", "مرحلة"],
+        reversed: ["Extournée", "معكوسة"],
+    };
+    const label = labels[entry.status];
+    return label
+        ? l(...label)
+        : String(entry.status || "—")
+              .replaceAll("_", " ")
+              .replace(/^./, (letter) => letter.toUpperCase());
+});
 const postDialog = ref(false);
 const postConfirmButton = ref<HTMLButtonElement | null>(null);
 const openPostDialog = async () => {
@@ -100,7 +110,7 @@ const reverse = () => {
             >
                 <div>
                     <span class="text-xs text-slate-500">Statut</span>
-                    <p class="font-bold">{{ entry.status }}</p>
+                    <p class="font-bold">{{ entryStatus }}</p>
                 </div>
                 <div>
                     <span class="text-xs text-slate-500">Date</span>

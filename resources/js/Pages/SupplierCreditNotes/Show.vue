@@ -6,6 +6,7 @@ import ExpenseNavigation from "@/Components/Expenses/ExpenseNavigation.vue";
 import FinancialStatusBadge from "@/Components/Expenses/FinancialStatusBadge.vue";
 import CreditAllocationEditor from "@/Components/Expenses/CreditAllocationEditor.vue";
 import AccountingPostingStatus from "@/Components/AccountingPostingStatus.vue";
+import { formatMADCents as money } from "@/Support/money";
 const props = defineProps<{
     creditNote: any;
     openInvoices: any[];
@@ -15,11 +16,6 @@ const allocations = ref<any[]>([
     { supplier_invoice_id: "", amount_cents: props.creditNote.amount_cents },
 ]);
 const cancellation = useForm({ reason: "" });
-const money = (cents: number) =>
-    new Intl.NumberFormat("fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(Number(cents || 0) / 100);
 </script>
 <template>
     <AuthenticatedLayout

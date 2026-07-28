@@ -2,6 +2,7 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import { computed, reactive } from "vue";
+import { formatMADCents as money } from "@/Support/money";
 
 const props = defineProps<{
     book: any;
@@ -191,11 +192,6 @@ const columns = computed(() => {
             ].includes(key),
     );
 });
-const money = (value: number) =>
-    new Intl.NumberFormat(isAr.value ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format((value || 0) / 100);
 const cell = (key: string, value: any) =>
     key.endsWith("_minor")
         ? money(Number(value))

@@ -1,10 +1,6 @@
 <script setup lang="ts">
+import { formatMADCents as money } from "@/Support/money";
 defineProps<{ allocations: any[] }>();
-const money = (cents: number) =>
-    new Intl.NumberFormat("fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(Number(cents || 0) / 100);
 </script>
 <template>
     <div class="grid gap-2">

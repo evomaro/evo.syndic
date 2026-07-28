@@ -5,13 +5,9 @@ import ExpenseNavigation from "@/Components/Expenses/ExpenseNavigation.vue";
 import FinancialStatusBadge from "@/Components/Expenses/FinancialStatusBadge.vue";
 import SettlementAllocationPreview from "@/Components/Expenses/SettlementAllocationPreview.vue";
 import AccountingPostingStatus from "@/Components/AccountingPostingStatus.vue";
+import { formatMADCents as money } from "@/Support/money";
 const props = defineProps<{ settlement: any; accountingPosting: any }>();
 const reversal = useForm({ reason: "" });
-const money = (cents: number) =>
-    new Intl.NumberFormat("fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(Number(cents || 0) / 100);
 </script>
 <template>
     <AuthenticatedLayout

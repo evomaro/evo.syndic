@@ -4,6 +4,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ExpenseNavigation from "@/Components/Expenses/ExpenseNavigation.vue";
 import FinancialStatusBadge from "@/Components/Expenses/FinancialStatusBadge.vue";
 import PrivateAttachmentUploader from "@/Components/Expenses/PrivateAttachmentUploader.vue";
+import { formatMADCents as money } from "@/Support/money";
 
 const props = defineProps<{ contract: any }>();
 const transition = useForm({
@@ -12,11 +13,6 @@ const transition = useForm({
     ends_on: "",
     reason: "",
 });
-const money = (cents: number) =>
-    new Intl.NumberFormat("fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(Number(cents || 0) / 100);
 const date = (value?: string) =>
     value
         ? new Intl.DateTimeFormat("fr-MA", { dateStyle: "medium" }).format(

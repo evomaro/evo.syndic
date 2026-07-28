@@ -2,6 +2,7 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, router, useForm, usePage } from "@inertiajs/vue3";
 import { computed, ref } from "vue";
+import { formatMADCents as money } from "@/Support/money";
 
 const props = defineProps<{
     book: any;
@@ -22,9 +23,9 @@ const permissions = computed<string[]>(
 );
 const l = (fr: string, ar: string) => (isAr.value ? ar : fr);
 const latest = computed(() => props.packages?.[0] ?? null);
-const modal = ref<
-    "approve" | "execute" | "carry" | "reopen" | "period" | null
->(null);
+const modal = ref<"approve" | "execute" | "carry" | "reopen" | "period" | null>(
+    null,
+);
 const selectedPeriod = ref<any | null>(null);
 const periodForm = useForm({ reason: "" });
 const confirmationForm = useForm({ confirmation: "", reason: "" });
@@ -60,11 +61,6 @@ const resultClass = (result: string) =>
         : result === "warning"
           ? "border-amber-200 bg-amber-50 text-amber-900"
           : "border-red-200 bg-red-50 text-red-900";
-const money = (value: number) =>
-    new Intl.NumberFormat(isAr.value ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format((Number(value) || 0) / 100);
 const changeExercise = (event: Event) =>
     router.get(
         route("accounting.closing.index"),
@@ -90,9 +86,7 @@ const closePeriod = () => {
         { onSuccess: () => (modal.value = null) },
     );
 };
-const openConfirmation = (
-    kind: "approve" | "execute" | "carry" | "reopen",
-) => {
+const openConfirmation = (kind: "approve" | "execute" | "carry" | "reopen") => {
     confirmationForm.reset();
     modal.value = kind;
 };
@@ -499,7 +493,12 @@ const confirmAction = () => {
                     class="mt-3 rounded-xl bg-sky-800 px-4 py-2 text-white"
                     @click="openConfirmation('reopen')"
                 >
-                    {{ l("Réouvrir avec contre-passation", "إعادة الفتح بقيد عكسي") }}
+                    {{
+                        l(
+                            "Réouvrir avec contre-passation",
+                            "إعادة الفتح بقيد عكسي",
+                        )
+                    }}
                 </button>
             </section>
 
@@ -536,9 +535,9 @@ const confirmAction = () => {
                                                 "تأكيد إعادة الفتح المراقبة",
                                             )
                                           : l(
-                                              "Confirmer le report à nouveau",
-                                              "تأكيد الترحيل",
-                                          )
+                                                "Confirmer le report à nouveau",
+                                                "تأكيد الترحيل",
+                                            )
                             }}
                         </h2>
                         <template v-if="modal === 'period'">

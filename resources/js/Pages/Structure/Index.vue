@@ -45,7 +45,9 @@ const runSearch = () =>
     );
 </script>
 <template>
-    <AuthenticatedLayout :title="t('structure')"
+    <AuthenticatedLayout
+        :title="t('structure')"
+        :subtitle="t('structureSubtitle')"
         ><template #actions
             ><div class="flex gap-2">
                 <button class="btn-secondary" @click="tab = 'bulk'">
@@ -64,6 +66,24 @@ const runSearch = () =>
             /><button class="btn-secondary" @click="runSearch">
                 {{ t("search") }}
             </button>
+        </div>
+        <div
+            v-if="p.filters.status"
+            class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900"
+        >
+            <span>
+                {{
+                    p.filters.status === "vacant"
+                        ? t("vacantLotsFilter")
+                        : t("missingOwnersFilter")
+                }}
+            </span>
+            <Link
+                :href="route('structure.index')"
+                class="font-semibold underline underline-offset-2"
+            >
+                {{ t("clearFilter") }}
+            </Link>
         </div>
         <div class="grid gap-5 xl:grid-cols-[300px_1fr]">
             <aside class="panel overflow-hidden">

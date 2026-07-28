@@ -1,12 +1,8 @@
 <script setup lang="ts">
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ExpenseNavigation from "@/Components/Expenses/ExpenseNavigation.vue";
+import { formatMADCents as money } from "@/Support/money";
 defineProps<{ payables: any[]; filters: any }>();
-const money = (v: number) =>
-    new Intl.NumberFormat("fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(v / 100);
 </script>
 <template>
     <AuthenticatedLayout

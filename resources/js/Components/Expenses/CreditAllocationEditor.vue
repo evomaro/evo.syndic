@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { formatMADCents as money } from "@/Support/money";
 import MoneyInput from "./MoneyInput.vue";
 const props = defineProps<{ invoices: any[]; creditAmount: number }>();
 const allocations = defineModel<any[]>({ required: true });
@@ -11,11 +12,6 @@ const total = computed(() =>
         0,
     ),
 );
-const money = (cents: number) =>
-    new Intl.NumberFormat("fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(cents / 100);
 </script>
 <template>
     <div class="grid gap-2">

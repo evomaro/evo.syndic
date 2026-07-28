@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { formatMADCents as money } from "@/Support/money";
 import ExpenseCategoryPicker from "./ExpenseCategoryPicker.vue";
 import MoneyInput from "./MoneyInput.vue";
 defineProps<{ categories: any[] }>();
@@ -13,11 +14,6 @@ const add = () =>
 const total = computed(() =>
     lines.value.reduce((sum, line) => sum + Number(line.planned_cents || 0), 0),
 );
-const money = (cents: number) =>
-    new Intl.NumberFormat("fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format(cents / 100);
 </script>
 <template>
     <div class="grid gap-3">

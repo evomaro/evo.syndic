@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from "@/i18n";
+import { formatMADCents as money } from "@/Support/money";
 defineProps<{ metrics: any }>();
 const { locale } = useI18n();
 const text = (fr: string, ar: string) => (locale.value === "ar" ? ar : fr);
-const money = (v: number) =>
-    new Intl.NumberFormat(locale.value === "ar" ? "ar-MA" : "fr-MA", {
-        style: "currency",
-        currency: "MAD",
-    }).format((v || 0) / 100);
 </script>
 <template>
     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
