@@ -61,6 +61,39 @@ class ProfileTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
+    public function test_language_can_be_changed_from_the_global_switcher(): void
+    {
+        $user = User::factory()->create(['preferred_language' => 'fr']);
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/dashboard')
+            ->patch('/profile/language', ['preferred_language' => 'ar']);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/dashboard');
+
+        $this->assertSame('ar', $user->refresh()->preferred_language);
+        $this->assertSame('ar', session('locale'));
+    }
+
+    public function test_global_language_switcher_rejects_unsupported_locales(): void
+    {
+        $user = User::factory()->create(['preferred_language' => 'fr']);
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/dashboard')
+            ->patch('/profile/language', ['preferred_language' => 'en']);
+
+        $response
+            ->assertSessionHasErrors('preferred_language')
+            ->assertRedirect('/dashboard');
+
+        $this->assertSame('fr', $user->refresh()->preferred_language);
+    }
+
     public function test_user_can_delete_their_account(): void
     {
         $user = User::factory()->create();

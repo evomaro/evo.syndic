@@ -34,6 +34,7 @@ class FinanceController extends Controller
             'upcomingCalls' => $residence->fundCalls()->where('status', 'validated')->where('due_date', '>=', now())->orderBy('due_date')->limit(6)->get(),
             'draftCalls' => $residence->fundCalls()->where('status', 'draft')->latest()->limit(6)->get(),
             'filters' => compact('from', 'to'),
+            'generatedAt' => now()->toIso8601String(),
         ]);
     }
 

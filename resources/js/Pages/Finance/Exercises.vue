@@ -4,6 +4,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import FinanceNav from "@/Components/FinanceNav.vue";
 import { useI18n } from "@/i18n";
 import InfoTooltip from "@/Components/InfoTooltip.vue";
+import Modal from "@/Components/Modal.vue";
 import { ref } from "vue";
 defineProps<{ exercises: any[] }>();
 const { t } = useI18n();
@@ -14,6 +15,7 @@ const form = useForm({
     notes: "",
 });
 const createStep = ref(1);
+const exerciseToClose = ref<any | null>(null);
 const createExercise = () =>
     form.post(route("financial-exercises.store"), {
         onSuccess: () => {
@@ -25,6 +27,14 @@ const transition = (id: number, action: string) => {
     const reason = action === "reopen" ? window.prompt(t("reason")) : "";
     useForm({ action, reason }).post(
         route("financial-exercises.transition", id),
+    );
+};
+const confirmClose = () => {
+    if (!exerciseToClose.value) return;
+    const id = exerciseToClose.value.id;
+    useForm({ action: "close", reason: "" }).post(
+        route("financial-exercises.transition", id),
+        { onSuccess: () => (exerciseToClose.value = null) },
     );
 };
 </script>
@@ -127,7 +137,7 @@ const transition = (id: number, action: string) => {
                         ><button
                             v-if="exercise.status === 'open'"
                             class="btn-secondary"
-                            @click="transition(exercise.id, 'close')"
+                            @click="exerciseToClose = exercise"
                         >
                             {{ t("closeExercise") }}</button
                         ><button
@@ -140,6 +150,39 @@ const transition = (id: number, action: string) => {
                     </div>
                 </article>
             </div>
-        </div></AuthenticatedLayout
+        </div>
+        <Modal
+            :show="Boolean(exerciseToClose)"
+            max-width="lg"
+            @close="exerciseToClose = null"
+        >
+            <div class="p-6">
+                <h2 class="text-xl font-bold text-slate-950">
+                    {{ t("closeExerciseTitle") }}
+                </h2>
+                <p class="mt-2 font-semibold">{{ exerciseToClose?.name }}</p>
+                <p
+                    class="mt-4 rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-950"
+                >
+                    {{ t("closeExerciseWarning") }}
+                </p>
+                <div class="mt-6 flex flex-wrap justify-end gap-3">
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        @click="exerciseToClose = null"
+                    >
+                        {{ t("keepExerciseOpen") }}
+                    </button>
+                    <button
+                        type="button"
+                        class="btn-primary"
+                        @click="confirmClose"
+                    >
+                        {{ t("confirmCloseExercise") }}
+                    </button>
+                </div>
+            </div>
+        </Modal></AuthenticatedLayout
     >
 </template>

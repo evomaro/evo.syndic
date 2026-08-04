@@ -6,9 +6,11 @@ import GuidedSetupTour from "@/Components/GuidedSetupTour.vue";
 
 defineProps<{ title?: string; subtitle?: string }>();
 const page = usePage<any>();
-const { t, dir } = useI18n();
+const { t, dir, locale } = useI18n();
 const collapsed = ref(false);
 const mobileSidebarOpen = ref(false);
+const switchingLanguage = ref(false);
+const availableLanguages = ["fr", "ar"] as const;
 type NavSectionKey =
     | "finance"
     | "operations"
@@ -464,6 +466,18 @@ const switchResidence = (event: Event) =>
     router.put(
         route("context.residence", (event.target as HTMLSelectElement).value),
     );
+const switchLanguage = (preferredLanguage: "fr" | "ar") => {
+    if (preferredLanguage === locale.value || switchingLanguage.value) return;
+    switchingLanguage.value = true;
+    router.patch(
+        route("profile.language"),
+        { preferred_language: preferredLanguage },
+        {
+            preserveScroll: true,
+            onFinish: () => (switchingLanguage.value = false),
+        },
+    );
+};
 const loggingOut = ref(false);
 const clearOfflineCaches = async () => {
     const registration = await navigator.serviceWorker?.getRegistration();
@@ -819,6 +833,29 @@ const logout = async () => {
                                 </option>
                             </select>
                         </label>
+                    </div>
+                    <div
+                        class="flex shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-bold"
+                        role="group"
+                        :aria-label="t('language')"
+                        :aria-busy="switchingLanguage"
+                    >
+                        <button
+                            v-for="language in availableLanguages"
+                            :key="language"
+                            type="button"
+                            class="min-h-9 min-w-9 rounded-lg px-2 uppercase transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 disabled:opacity-60"
+                            :class="
+                                locale === language
+                                    ? 'bg-white text-teal-800 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-900'
+                            "
+                            :aria-pressed="locale === language"
+                            :disabled="switchingLanguage"
+                            @click="switchLanguage(language)"
+                        >
+                            {{ language }}
+                        </button>
                     </div>
                     <Link
                         :href="route('profile.edit')"

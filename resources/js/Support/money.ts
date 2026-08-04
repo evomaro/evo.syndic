@@ -1,4 +1,4 @@
-const madNumber = new Intl.NumberFormat("de-DE", {
+const madNumber = new Intl.NumberFormat("fr-FR", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
 });

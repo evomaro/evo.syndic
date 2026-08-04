@@ -11,6 +11,7 @@ const props = defineProps<{
     upcomingCalls: any[];
     draftCalls: any[];
     filters: { from: string; to: string };
+    generatedAt: string;
 }>();
 const cards = [
     ["amountCalled", "called_cents", "fund-calls.index", () => props.filters],
@@ -43,6 +44,10 @@ const cards = [
     ],
 ] as const;
 const { t, locale } = useI18n();
+const generatedAtLabel = new Intl.DateTimeFormat(
+    locale.value === "ar" ? "ar-MA" : "fr-MA",
+    { dateStyle: "long", timeStyle: "short" },
+).format(new Date(props.generatedAt));
 </script>
 <template>
     <AuthenticatedLayout :title="t('finance')" :subtitle="t('financeOverview')">
@@ -52,6 +57,10 @@ const { t, locale } = useI18n();
             }}</Link></template
         >
         <FinanceNav />
+        <p class="mb-4 text-sm text-slate-500">
+            {{ t("figuresAsOf") }}
+            <time :datetime="generatedAt">{{ generatedAtLabel }}</time>
+        </p>
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
             <Link
                 v-for="card in cards"

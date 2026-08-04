@@ -1,0 +1,1 @@
+const r=new Intl.NumberFormat("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2}),n=m=>{const t=Number(m??0);return`${r.format(Number.isFinite(t)?t:0)} MAD`},i=m=>n(Number(m??0)/100);export{n as a,i as f};
