@@ -285,8 +285,9 @@ const runSearch = () =>
                                     'other',
                                 ]"
                                 :key="x"
+                                :value="x"
                             >
-                                {{ x }}
+                                {{ t(x) }}
                             </option>
                         </select></label
                     ><label class="field"

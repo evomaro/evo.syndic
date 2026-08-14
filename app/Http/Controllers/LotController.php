@@ -12,6 +12,9 @@ class LotController extends Controller
     public function show(Lot $lot, TenantContext $context)
     {
         abort_unless($lot->residence_id === $context->residence()->id, 404);
+        $charge = $lot->charges()->whereNull('cancelled_at')->withSum(['allocations as paid_cents' => fn ($query) => $query->whereNull('reversed_at')], 'amount_cents')->latest('issue_date')->first();
+        $paid = (int) ($charge?->paid_cents ?? 0);
+        $remaining = max(0, (int) ($charge?->amount_cents ?? 0) - $paid);
 
         return Inertia::render('Lots/Show', [
             'lot' => $lot->load([
@@ -20,6 +23,13 @@ class LotController extends Controller
                 'occupancies' => fn ($query) => $query->with('contact')->latest('starts_on'),
                 'allocationValues.allocationKey:id,name,code,expected_total',
             ]),
+            'currentCotisation' => $charge ? [
+                'period' => $charge->issue_date->format('Y-m'),
+                'expected_cents' => (int) $charge->amount_cents,
+                'paid_cents' => $paid,
+                'remaining_cents' => $remaining,
+                'status' => $remaining === 0 ? 'paid' : ($paid > 0 ? 'partial' : 'unpaid'),
+            ] : null,
         ]);
     }
 

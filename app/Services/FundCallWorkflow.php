@@ -14,6 +14,7 @@ class FundCallWorkflow
         private DocumentNumberService $numbers,
         private FundCallDistributionService $distribution,
         private AutomatedAccountingPostingService $accounting,
+        private PrepaidCreditAllocator $prepaidCredits,
     ) {}
 
     public function preview(FundCall $call): array
@@ -81,6 +82,7 @@ class FundCallWorkflow
             $number = $this->numbers->next($call->residence, 'AF', (int) $call->issue_date->format('Y'));
             $call->update(['number' => $number, 'total_cents' => $total, 'status' => 'validated', 'validated_at' => now(), 'validated_by' => $actor->id]);
             $this->accounting->postFundCall($call->fresh(['charges.line']), $actor);
+            $this->prepaidCredits->applyToFundCall($call->fresh('charges'), $actor);
             activity()->performedOn($call)->causedBy($actor)->withProperties(['organization_id' => $call->organization_id, 'residence_id' => $call->residence_id, 'from' => 'draft', 'to' => 'validated'])->log('fund_call.validated');
 
             return $call->fresh(['charges']);

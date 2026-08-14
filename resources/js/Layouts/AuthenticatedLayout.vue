@@ -72,12 +72,65 @@ const toggleSection = (key: NavSectionKey) => {
     expandedSections.value[key] = !expandedSections.value[key];
 };
 const tenant = computed(() => page.props.tenant ?? {});
+const isEssential = computed(
+    () => tenant.value.organization?.experience_mode === "essential",
+);
 const isResident = computed(() => page.props.auth?.role === "coproprietaire");
 const contextualArticle = computed(() => {
     const current = route().current();
     return current ? page.props.helpContext?.[current] : null;
 });
 const nav = computed<NavItem[]>(() => {
+    if (isEssential.value && !isResident.value) {
+        const capabilities = page.props.auth?.capabilities ?? [];
+        return [
+            {
+                label: t("essentialDashboard"),
+                href: route("essential.dashboard"),
+                icon: "⌂",
+            },
+            capabilities.includes("residences.manage")
+                ? {
+                      label: t("residences"),
+                      href: route("residences.index"),
+                      icon: "◇",
+                      section: "operations" as NavSectionKey,
+                  }
+                : null,
+            capabilities.includes("cotisations.manage")
+                ? {
+                      label: t("essentialCotisations"),
+                      href: route("essential.cotisations"),
+                      icon: "≡",
+                      section: "operations" as NavSectionKey,
+                  }
+                : null,
+            capabilities.includes("expenses.manage")
+                ? {
+                      label: t("expenses"),
+                      href: route("essential.expenses"),
+                      icon: "⇩",
+                      section: "operations" as NavSectionKey,
+                  }
+                : null,
+            capabilities.includes("accounts.view")
+                ? {
+                      label: t("essentialAccounts"),
+                      href: route("essential.accounts"),
+                      icon: "₣",
+                      section: "operations" as NavSectionKey,
+                  }
+                : null,
+            capabilities.includes("reports.basic")
+                ? {
+                      label: t("reports"),
+                      href: route("essential.reports"),
+                      icon: "▤",
+                      section: "operations" as NavSectionKey,
+                  }
+                : null,
+        ].filter(Boolean) as NavItem[];
+    }
     const items: NavItem[] = [
         { label: t("dashboard"), href: route("dashboard"), icon: "⌂" },
         ...(page.props.auth?.permissions?.includes("view_finance")
@@ -287,10 +340,16 @@ const nav = computed<NavItem[]>(() => {
 });
 const homeNav = computed<NavItem>(() => nav.value[0]!);
 const navSections = computed(() =>
-    navSectionKeys
+    (isEssential.value && !isResident.value
+        ? (["operations"] as NavSectionKey[])
+        : navSectionKeys
+    )
         .map((key) => ({
             key,
-            label: t(`navSection${key[0].toUpperCase()}${key.slice(1)}`),
+            label:
+                isEssential.value && !isResident.value
+                    ? "EvoSyndic Essential"
+                    : t(`navSection${key[0].toUpperCase()}${key.slice(1)}`),
             items: nav.value.filter((item) => item.section === key),
         }))
         .filter((section) => section.items.length),
@@ -299,6 +358,9 @@ const active = (href: string) =>
     page.url === new URL(href, window.location.origin).pathname ||
     page.url.startsWith(new URL(href, window.location.origin).pathname + "/");
 const mobileNav = computed<any[]>(() => {
+    if (isEssential.value && !isResident.value) {
+        return nav.value.slice(0, 5);
+    }
     if (isResident.value) {
         return [
             {
@@ -515,7 +577,10 @@ const logout = async () => {
 </script>
 
 <template>
-    <div :dir="dir" class="min-h-screen bg-stone-50 text-slate-800">
+    <div
+        :dir="dir"
+        class="min-h-screen w-full max-w-full overflow-x-hidden bg-stone-50 text-slate-800"
+    >
         <Head :title="title" />
         <aside
             :class="collapsed ? 'w-[76px]' : 'w-64'"
@@ -754,7 +819,7 @@ const logout = async () => {
 
         <div
             :class="collapsed ? 'lg:ps-[76px]' : 'lg:ps-64'"
-            class="transition-all"
+            class="min-w-0 max-w-full transition-all"
         >
             <header
                 class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur"
@@ -868,7 +933,7 @@ const logout = async () => {
                 </div>
             </header>
             <main
-                class="mx-auto max-w-[1500px] px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-10"
+                class="mx-auto min-w-0 max-w-[1500px] overflow-x-hidden px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-10"
             >
                 <div
                     v-if="page.props.flash?.success"

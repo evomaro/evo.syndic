@@ -126,6 +126,8 @@ php artisan schedule:list
 
 Ensure `storage/app/private/finance` is persistent and backed up, `APP_URL` is the public HTTPS origin used by receipt QR codes, the PHP process can write storage, and queue/scheduler supervisors are active.
 
+Production must run with `APP_ENV=production` and `APP_DEBUG=false`. Before bringing the application back online, run `php artisan about --only=environment` and stop the deployment if it does not report `Environment: production` and `Debug Mode: DISABLED`; raw exception pages must never be exposed on a user-facing runtime.
+
 ## Phase 03 starting point
 
 Begin Phase 03 supplier expenses by adding expense commitments, supplier invoices and settlements that create debit `financial_account_movements`. Reference existing fund-call categories and exercises; do not mutate Phase 02 receipts, allocations, or source movements. Reconciliation should continue to use the operational account ledger until the later full double-entry engine projects these source records into Moroccan statutory journals and annexes.

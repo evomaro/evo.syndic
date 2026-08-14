@@ -78,5 +78,7 @@
     "Paiement affecté": "دفعة مخصصة",
     "Extourne de paiement": "عكس دفعة",
     "Outil opérationnel configurable — ne constitue pas un conseil juridique ou fiscal.": "أداة تشغيلية قابلة للتهيئة — لا تشكل استشارة قانونية أو ضريبية.",
-    "Une tâche terminée en interne n’est pas une acceptation par une autorité.": "إتمام المهمة داخلياً لا يعني قبولها من طرف جهة خارجية."
+    "Une tâche terminée en interne n’est pas une acceptation par une autorité.": "إتمام المهمة داخلياً لا يعني قبولها من طرف جهة خارجية.",
+    "Impossible d’annuler : des paiements ont déjà été enregistrés.": "يتعذر الإلغاء: تم تسجيل دفعات بالفعل.",
+    "Impossible d’annuler : la période financière est clôturée.": "يتعذر الإلغاء: الفترة المالية مغلقة."
 }

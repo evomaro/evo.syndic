@@ -81,6 +81,11 @@ class Residence extends Model implements HasMedia
         return $this->hasMany(ChargeCategory::class);
     }
 
+    public function expenseCategories()
+    {
+        return $this->hasMany(ExpenseCategory::class);
+    }
+
     public function fundCalls()
     {
         return $this->hasMany(FundCall::class);

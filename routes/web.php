@@ -13,6 +13,7 @@ use App\Http\Controllers\ComplianceController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContextController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EssentialController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseCommitmentController;
 use App\Http\Controllers\ExpenseDashboardController;
@@ -40,6 +41,7 @@ use App\Http\Controllers\MaintenanceWorkOrderController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OccupancyController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\OrganizationExperienceController;
 use App\Http\Controllers\OwnerFinancePortalController;
 use App\Http\Controllers\OwnerGovernanceController;
 use App\Http\Controllers\OwnershipController;
@@ -88,8 +90,24 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/invitations/{token}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
 
-    Route::middleware(['verified', 'tenant'])->group(function () {
+    Route::middleware(['verified', 'tenant', 'experience'])->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::patch('/organization/experience', [OrganizationExperienceController::class, 'update'])->name('essential.experience.update');
+        Route::prefix('essential')->name('essential.')->group(function () {
+            Route::get('/dashboard', [EssentialController::class, 'dashboard'])->name('dashboard');
+            Route::get('/cotisations', [EssentialController::class, 'cotisations'])->name('cotisations');
+            Route::post('/cotisations/preview', [EssentialController::class, 'previewCotisation'])->name('cotisations.preview');
+            Route::post('/cotisations/generate', [EssentialController::class, 'generateCotisation'])->name('cotisations.generate');
+            Route::post('/cotisations/{fundCall}/cancel', [EssentialController::class, 'cancelCotisation'])->name('cotisations.cancel');
+            Route::post('/payments/preview', [EssentialController::class, 'previewPayment'])->name('payments.preview');
+            Route::post('/payments', [EssentialController::class, 'payment'])->name('payments.store');
+            Route::get('/expenses', [EssentialController::class, 'expenses'])->name('expenses');
+            Route::post('/expenses', [EssentialController::class, 'storeExpense'])->name('expenses.store');
+            Route::get('/accounts', [EssentialController::class, 'accounts'])->name('accounts');
+            Route::post('/transfers', [EssentialController::class, 'transfer'])->name('transfers.store');
+            Route::get('/reports', [EssentialController::class, 'reports'])->name('reports');
+            Route::get('/reports.csv', [EssentialController::class, 'exportReport'])->name('reports.export');
+        });
         Route::get('/help/{article?}', [HelpCenterController::class, 'index'])
             ->where('article', '[a-z0-9-]+')
             ->name('help.index');

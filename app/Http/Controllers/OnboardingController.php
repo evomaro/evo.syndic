@@ -30,7 +30,7 @@ class OnboardingController extends Controller
 
     public function organization(Request $request)
     {
-        $data = $request->validate(['name' => 'required|string|max:255', 'code' => 'required|alpha_dash|max:50|unique:organizations,code', 'type' => ['required', Rule::in(['volunteer_syndic', 'professional_syndic'])]]);
+        $data = $request->validate(['name' => 'required|string|max:255', 'code' => 'required|alpha_dash|max:50|unique:organizations,code', 'type' => ['required', Rule::in(['volunteer_syndic', 'professional_syndic'])], 'experience_mode' => ['sometimes', 'required', Rule::in(['essential', 'pro'])]]);
         DB::transaction(function () use ($request, $data) {
             $organization = Organization::create($data);
             $organization->users()->attach($request->user(), ['role' => 'owner', 'all_residences' => true]);

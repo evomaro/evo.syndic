@@ -11,5 +11,7 @@
     "Residence archived.": "Résidence archivée.",
     "Residence created.": "Résidence créée.",
     "Residence restored.": "Résidence restaurée.",
-    "Residence updated.": "Résidence mise à jour."
+    "Residence updated.": "Résidence mise à jour.",
+    "Impossible d’annuler : des paiements ont déjà été enregistrés.": "Impossible d’annuler : des paiements ont déjà été enregistrés.",
+    "Impossible d’annuler : la période financière est clôturée.": "Impossible d’annuler : la période financière est clôturée."
 }

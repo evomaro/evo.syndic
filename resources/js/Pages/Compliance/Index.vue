@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import PeriodPicker from "@/Components/PeriodPicker.vue";
 import { Head, Link, router, useForm, usePage } from "@inertiajs/vue3";
 import { computed, ref } from "vue";
 
@@ -429,10 +430,9 @@ const calendarDays = computed(() => {
                             {{ item.reference || `${item.starts_on}–${item.ends_on}` }}
                         </option>
                     </select>
-                    <input
+                    <PeriodPicker
                         v-if="view === 'month'"
                         v-model="filters.month"
-                        type="month"
                         class="rounded-lg border-slate-300"
                         :aria-label="text('Mois affiché', 'الشهر المعروض')"
                     />

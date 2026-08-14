@@ -2,8 +2,9 @@
 
 namespace App\Http\Middleware;
 
-use App\Services\MembershipAuthorization;
+use App\Services\ExperienceCapabilities;
 use App\Services\HelpCenterService;
+use App\Services\MembershipAuthorization;
 use Closure;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -48,7 +49,7 @@ class HandleInertiaRequests extends Middleware
             app()->setLocale($request->user()->preferred_language === 'ar' ? 'ar' : 'fr');
         }
         $user = $request->user();
-        $organizations = $user?->organizations()->where('active', true)->get(['organizations.id', 'name', 'type']) ?? collect();
+        $organizations = $user?->organizations()->where('active', true)->get(['organizations.id', 'name', 'type', 'experience_mode']) ?? collect();
         $organization = $organizations->firstWhere('id', $user?->current_organization_id);
         $residences = collect();
         $residence = null;
@@ -69,6 +70,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
                 'role' => $membership?->role,
                 'permissions' => $organization && $user ? app(MembershipAuthorization::class)->permissions($user, $organization) : [],
+                'capabilities' => $organization && $user ? app(ExperienceCapabilities::class)->capabilities($user, $organization) : [],
             ],
             'tenant' => [
                 'organization' => $organization,

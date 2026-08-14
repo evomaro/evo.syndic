@@ -72,7 +72,9 @@ class PaymentWorkflow
             }
             $this->assertPaymentInvariant($payment);
             $number = $this->numbers->next($payment->residence, 'PAY', (int) $payment->payment_date->format('Y'));
-            FinancialAccountMovement::create(['organization_id' => $payment->organization_id, 'residence_id' => $payment->residence_id, 'financial_account_id' => $payment->financial_account_id, 'financial_exercise_id' => $payment->financial_exercise_id, 'payment_id' => $payment->id, 'direction' => 'credit', 'operational_kind' => 'payment_receipt', 'amount_cents' => $payment->amount_cents, 'occurred_on' => $payment->payment_date, 'source_type' => Payment::class, 'source_id' => $payment->id, 'description' => "Paiement {$number}", 'created_by' => $actor->id]);
+            $coveredMonths = (int) data_get($payment->metadata, 'essential_month_count', 0);
+            $description = "Paiement {$number}".($coveredMonths > 1 ? " — {$coveredMonths} mois" : '');
+            FinancialAccountMovement::create(['organization_id' => $payment->organization_id, 'residence_id' => $payment->residence_id, 'financial_account_id' => $payment->financial_account_id, 'financial_exercise_id' => $payment->financial_exercise_id, 'payment_id' => $payment->id, 'direction' => 'credit', 'operational_kind' => 'payment_receipt', 'amount_cents' => $payment->amount_cents, 'occurred_on' => $payment->payment_date, 'source_type' => Payment::class, 'source_id' => $payment->id, 'description' => $description, 'created_by' => $actor->id]);
             $payment->update(['number' => $number]);
             $this->receipts->generate($payment, $actor);
             $payment->update(['status' => 'validated', 'validated_at' => now(), 'validated_by' => $actor->id]);
@@ -85,9 +87,21 @@ class PaymentWorkflow
 
     public function allocateCredit(Payment $payment, User $actor, array $manual): Payment
     {
-        return DB::transaction(function () use ($payment, $actor, $manual) {
+        return $this->allocateValidatedCredit($payment, $actor, $manual, true);
+    }
+
+    public function allocateCreditAutomatically(Payment $payment, User $actor, array $manual): Payment
+    {
+        return $this->allocateValidatedCredit($payment, $actor, $manual, false);
+    }
+
+    private function allocateValidatedCredit(Payment $payment, User $actor, array $manual, bool $authorize): Payment
+    {
+        return DB::transaction(function () use ($payment, $actor, $manual, $authorize) {
             $payment = Payment::query()->whereKey($payment->id)->with(['residence.organization', 'documents'])->lockForUpdate()->firstOrFail();
-            abort_unless($actor->canInOrganization('allocate_credit', $payment->residence->organization), 403);
+            if ($authorize) {
+                abort_unless($actor->canInOrganization('allocate_credit', $payment->residence->organization), 403);
+            }
             if ($payment->status !== 'validated') {
                 throw ValidationException::withMessages(['status' => __('Le paiement doit être valide.')]);
             }
@@ -99,7 +113,7 @@ class PaymentWorkflow
             $order = (int) $payment->allocations()->max('allocation_order') + 1;
             $lastAllocationId = (int) $payment->allocations()->max('id');
             foreach ($manual as $row) {
-                $remaining = $this->allocate($payment, (int) $row['lot_charge_id'], (int) $row['amount_cents'], $remaining, $actor, $order++, today()->toDateString(), true);
+                $remaining = $this->allocate($payment, (int) $row['lot_charge_id'], (int) $row['amount_cents'], $remaining, $actor, $order++, $row['allocated_on'] ?? today()->toDateString(), true);
             }
             $this->assertPaymentInvariant($payment);
             $payment->allocations()->where('id', '>', $lastAllocationId)->orderBy('id')->get()

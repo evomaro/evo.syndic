@@ -32,4 +32,9 @@ class FinancialAccountMovement extends Model
     {
         return $this->belongsTo(SupplierSettlement::class);
     }
+
+    public function transfer()
+    {
+        return $this->belongsTo(FinancialTransfer::class, 'financial_transfer_id');
+    }
 }

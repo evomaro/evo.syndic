@@ -16,7 +16,12 @@ class DashboardController extends Controller
         $org = $context->organization;
         if (! $org) {
             return redirect()->route('onboarding.index');
-        }$res = $context->residence;
+        }
+        $res = $context->residence;
+        $role = request()->user()->organizations()->whereKey($org->id)->first()?->pivot?->role;
+        if ($org->isEssential() && $role !== 'coproprietaire') {
+            return redirect()->route('essential.dashboard', request()->only(['period', 'from_period', 'to_period', 'residence_id']));
+        }
         $stats = $res ? ['buildings' => $res->buildings()->where('active', true)->count(), 'lots' => $res->lots()->where('active', true)->count(), 'owners' => $org->contacts()->whereHas('ownerships.lot', fn ($q) => $q->where('residence_id', $res->id)->whereNull('ends_on'))->count(), 'occupants' => $org->contacts()->whereHas('occupancies.lot', fn ($q) => $q->where('residence_id', $res->id)->whereNull('ends_on'))->count(), 'vacant' => $res->lots()->where('active', true)->where('occupancy_status', 'vacant')->count(), 'missing_owners' => $res->lots()->where('active', true)->whereDoesntHave('activeOwnerships')->count(), 'missing_allocations' => $res->lots()->where('active', true)->whereDoesntHave('allocationValues', fn ($q) => $q->whereHas('allocationKey', fn ($k) => $k->where('is_default', true)))->count()] : ['residences' => $org->residences()->count(), 'lots' => $org->residences()->withCount(['lots' => fn ($q) => $q->where('active', true)])->get()->sum('lots_count'), 'contacts' => $org->contacts()->count(), 'setup' => $org->residences()->where('status', 'setup')->count(), 'invitations' => $org->invitations()->whereNull('accepted_at')->whereNull('cancelled_at')->where('expires_at', '>', now())->count()];
 
         $finance = null;

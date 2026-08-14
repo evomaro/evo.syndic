@@ -4,9 +4,13 @@
 
 @layer base {
     html {
+        max-width: 100%;
+        overflow-x: clip;
         font-family: Inter, ui-sans-serif, system-ui, sans-serif;
     }
     body {
+        max-width: 100%;
+        overflow-x: clip;
         @apply antialiased;
     }
     input:not([type="checkbox"]):not([type="radio"]),

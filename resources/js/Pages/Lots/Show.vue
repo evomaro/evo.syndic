@@ -5,8 +5,9 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import ContactPicker from "@/Components/ContactPicker.vue";
 import InfoTooltip from "@/Components/InfoTooltip.vue";
 import { useI18n } from "@/i18n";
+import { formatMADCents } from "@/Support/money";
 
-const props = defineProps<{ lot: any }>();
+const props = defineProps<{ lot: any; currentCotisation?: any }>();
 const { t } = useI18n();
 const transferOpen = ref(false);
 const occupancyOpen = ref(false);
@@ -143,7 +144,7 @@ const date = (value: string) => new Date(value).toLocaleDateString();
                             v-if="!lot.occupancies.length"
                             class="p-8 text-center text-sm text-slate-500"
                         >
-                            {{ t("noResults") }}
+                            {{ t("occupancyHistoryEmpty") }}
                         </p>
                     </div>
                 </section>
@@ -164,6 +165,55 @@ const date = (value: string) => new Date(value).toLocaleDateString();
                         <dd class="font-bold">{{ t(lot.occupancy_status) }}</dd>
                     </div>
                 </dl>
+                <div class="mt-6 border-t pt-5">
+                    <h3 class="text-sm font-bold">Dernière cotisation émise</h3>
+                    <p class="mt-1 text-xs text-slate-500">
+                        La période la plus récente enregistrée pour ce lot.
+                    </p>
+                    <div
+                        v-if="currentCotisation"
+                        class="mt-3 rounded-xl bg-slate-50 p-3 text-sm"
+                    >
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Période</span
+                            ><b>{{ currentCotisation.period }}</b>
+                        </div>
+                        <div class="mt-2 flex justify-between">
+                            <span class="text-slate-500">Attendu</span
+                            ><b>{{
+                                formatMADCents(currentCotisation.expected_cents)
+                            }}</b>
+                        </div>
+                        <div class="mt-2 flex justify-between">
+                            <span class="text-slate-500">Reste</span
+                            ><b>{{
+                                formatMADCents(
+                                    currentCotisation.remaining_cents,
+                                )
+                            }}</b>
+                        </div>
+                        <span
+                            class="mt-3 inline-flex rounded-full px-2 py-1 text-xs font-bold"
+                            :class="
+                                currentCotisation.status === 'paid'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : currentCotisation.status === 'partial'
+                                      ? 'bg-amber-100 text-amber-800'
+                                      : 'bg-rose-100 text-rose-800'
+                            "
+                            >{{
+                                currentCotisation.status === "paid"
+                                    ? "Payé"
+                                    : currentCotisation.status === "partial"
+                                      ? "Partiellement payé"
+                                      : "Impayé"
+                            }}</span
+                        >
+                    </div>
+                    <p v-else class="mt-2 text-sm text-slate-500">
+                        Aucune cotisation émise.
+                    </p>
+                </div>
                 <div class="mt-6 border-t pt-5">
                     <h3 class="text-sm font-bold">
                         {{ t("allocations") }}

@@ -17,6 +17,11 @@ class Organization extends Model
         return ['active' => 'boolean'];
     }
 
+    public function isEssential(): bool
+    {
+        return $this->experience_mode === 'essential';
+    }
+
     public function users()
     {
         return $this->belongsToMany(User::class)->withPivot(['role', 'all_residences', 'permissions'])->withTimestamps();

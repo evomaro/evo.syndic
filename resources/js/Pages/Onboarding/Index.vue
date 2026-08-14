@@ -8,7 +8,12 @@ const props = defineProps<{
     can_activate: boolean;
 }>();
 const { t, dir } = useI18n();
-const org = useForm({ name: "", code: "", type: "volunteer_syndic" });
+const org = useForm({
+    name: "",
+    code: "",
+    type: "volunteer_syndic",
+    experience_mode: "essential",
+});
 const res = useForm({ name: "", code: "", address_line_1: "", city: "" });
 </script>
 <template>
@@ -76,6 +81,35 @@ const res = useForm({ name: "", code: "", address_line_1: "", city: "" });
                             />{{ t("professional") }}</label
                         >
                     </div>
+                    <fieldset>
+                        <legend class="field-label mb-2">Expérience</legend>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <label class="panel cursor-pointer p-4"
+                                ><input
+                                    v-model="org.experience_mode"
+                                    type="radio"
+                                    value="essential"
+                                    class="me-2"
+                                />
+                                <strong>Essential</strong
+                                ><span class="mt-1 block text-sm text-slate-500"
+                                    >Gestion quotidienne simplifiée.</span
+                                ></label
+                            >
+                            <label class="panel cursor-pointer p-4"
+                                ><input
+                                    v-model="org.experience_mode"
+                                    type="radio"
+                                    value="pro"
+                                    class="me-2"
+                                />
+                                <strong>Pro</strong
+                                ><span class="mt-1 block text-sm text-slate-500"
+                                    >Tous les modules professionnels.</span
+                                ></label
+                            >
+                        </div>
+                    </fieldset>
                     <button class="btn-primary" :disabled="org.processing">
                         {{ t("next") }}
                     </button>
