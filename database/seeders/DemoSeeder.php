@@ -63,7 +63,18 @@ class DemoSeeder extends Seeder
                 $res->lots()->create(['reference' => $ref, 'lot_number' => $ref, 'type' => $type]);
             }
         }
-        $contacts = collect([['Amina', 'El Mansouri'], ['Youssef', 'Bennani'], ['Sara', 'Alaoui'], ['Omar', 'Idrissi']])->map(fn ($n, $i) => $org->contacts()->create(['type' => 'individual', 'first_name' => $n[0], 'last_name' => $n[1], 'primary_phone' => '+212 6'.fake()->numerify(' ## ## ## ##'), 'preferred_language' => $i === 1 ? 'ar' : 'fr']));
+        $contacts = collect([
+            ['Amina', 'El Mansouri'],
+            ['Youssef', 'Bennani'],
+            ['Sara', 'Alaoui'],
+            ['Omar', 'Idrissi'],
+        ])->map(fn ($n, $i) => $org->contacts()->create([
+            'type' => 'individual',
+            'first_name' => $n[0],
+            'last_name' => $n[1],
+            'primary_phone' => sprintf('+212 600 00 00 %02d', $i + 1),
+            'preferred_language' => $i === 1 ? 'ar' : 'fr',
+        ]));
         $company = $org->contacts()->create(['type' => 'company', 'company_name' => 'Café Andalou SARL', 'ice' => '002345678000012', 'primary_phone' => '+212 522 11 22 33', 'preferred_language' => 'fr']);
         foreach ($org->residences as $res) {
             $lots = $res->lots;
